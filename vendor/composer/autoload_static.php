@@ -176,13 +176,13 @@ class ComposerStaticInitd2a74ba94e266cc4f45a64c54a292d7e
         ),
         'think\\' => 
         array (
-            0 => __DIR__ . '/..' . '/topthink/think-queue/src',
-            1 => __DIR__ . '/..' . '/topthink/think-template/src',
-            2 => __DIR__ . '/..' . '/topthink/framework/src/think',
-            3 => __DIR__ . '/..' . '/topthink/think-validate/src',
-            4 => __DIR__ . '/..' . '/topthink/think-orm/src',
-            5 => __DIR__ . '/..' . '/topthink/think-container/src',
-            6 => __DIR__ . '/..' . '/topthink/think-helper/src',
+            0 => __DIR__ . '/..' . '/topthink/framework/src/think',
+            1 => __DIR__ . '/..' . '/topthink/think-container/src',
+            2 => __DIR__ . '/..' . '/topthink/think-helper/src',
+            3 => __DIR__ . '/..' . '/topthink/think-orm/src',
+            4 => __DIR__ . '/..' . '/topthink/think-queue/src',
+            5 => __DIR__ . '/..' . '/topthink/think-template/src',
+            6 => __DIR__ . '/..' . '/topthink/think-validate/src',
         ),
         'clagiordano\\weblibs\\configmanager\\' => 
         array (
@@ -210,8 +210,8 @@ class ComposerStaticInitd2a74ba94e266cc4f45a64c54a292d7e
         ),
         'TencentCloud\\' => 
         array (
-            0 => __DIR__ . '/..' . '/tencentcloud/sms/src/TencentCloud',
-            1 => __DIR__ . '/..' . '/tencentcloud/common/src/TencentCloud',
+            0 => __DIR__ . '/..' . '/tencentcloud/common/src/TencentCloud',
+            1 => __DIR__ . '/..' . '/tencentcloud/sms/src/TencentCloud',
         ),
         'Symfony\\Polyfill\\Php81\\' => 
         array (
