@@ -45,6 +45,12 @@ class RechargeLogic extends BaseLogic
                 'user_id' => $params['user_id'],
                 'pay_status' => PayEnum::UNPAID,
                 'order_amount' => $params['money'],
+                'number' => $params['number'],
+                'name' => $params['name'],
+                'meal_id' => $params['meal_id'],
+                'meal_discount' => $params['meal_discount'],
+                'pay_amount' => $params['meal_discounted_price'],
+                'type' => $params['type'],
             ];
             $order = RechargeOrder::create($data);
 

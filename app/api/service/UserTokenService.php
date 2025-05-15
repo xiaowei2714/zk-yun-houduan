@@ -36,6 +36,7 @@ class UserTokenService
     public static function setToken($userId, $terminal)
     {
         $time = time();
+
         $userSession = UserSession::where([['user_id', '=', $userId], ['terminal', '=', $terminal]])->find();
 
         //获取token延长过期的时间
@@ -44,13 +45,16 @@ class UserTokenService
 
         //token处理
         if ($userSession) {
+
             //清空缓存
             $userTokenCache->deleteUserInfo($userSession->token);
+
             //重新获取token
             $userSession->token = create_token($userId);
             $userSession->expire_time = $expireTime;
             $userSession->update_time = $time;
             $userSession->save();
+
         } else {
             //找不到在该终端的token记录，创建token记录
             $userSession = UserSession::create([

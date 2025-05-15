@@ -14,20 +14,18 @@
 
 namespace app\api\controller;
 
-
 use app\api\logic\IndexLogic;
 use app\api\logic\LoginLogic;
+use app\api\service\UserMealService;
 use app\api\service\UserTokenService;
 use app\common\cache\UserAccountSafeCache;
 use app\common\enum\YesNoEnum;
 use app\common\model\AdOrder;
 use app\common\model\EmailVerifyCode;
 use app\common\model\Notice;
-use app\common\model\SetMeal;
 use app\common\model\Substation;
 use app\common\model\user\User;
 use app\common\model\UserAd;
-use app\common\model\UserMealDiscount;
 use app\common\model\UserMoneyLog;
 use app\common\model\UserPayType;
 use app\common\model\Withdraw;
@@ -37,12 +35,14 @@ use app\common\service\FileService;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use PHPMailer\PHPMailer\PHPMailer;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\facade\Config;
 use think\facade\Db;
 use think\facade\Queue;
 use think\facade\Log;
 use think\response\Json;
-
 
 /**
  * index
@@ -51,8 +51,6 @@ use think\response\Json;
  */
 class IndexController extends BaseApiController
 {
-
-
     public array $notNeedLogin = ['index', 'config', 'policy', 'decorate', 'getPrivacy','getSetting','sendCode','register','login','changePwd','getIndexConfig',
         'getNoticeList', 'getNoticeDetail', 'getKf'];
 
@@ -61,9 +59,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/6
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getAdOrderDetail()
     {
@@ -97,9 +95,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/6
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function adBuy()
     {
@@ -192,9 +190,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/6
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getAdDetail()
     {
@@ -224,9 +222,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/5
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getMAdList()
     {
@@ -255,9 +253,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/4
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function delAd()
     {
@@ -289,9 +287,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/4
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function adChange()
     {
@@ -316,9 +314,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/4
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function addAd()
     {
@@ -361,9 +359,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/4
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getAdUserMoney()
     {
@@ -378,9 +376,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/2
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getAdPerm()
     {
@@ -395,9 +393,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/2
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getAdList()
     {
@@ -437,9 +435,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/2
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getMoneyLogList()
     {
@@ -502,9 +500,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/1
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getTxList()
     {
@@ -521,9 +519,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/1
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function submitWithDrawal()
     {
@@ -601,9 +599,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/1
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function openSub()
     {
@@ -644,9 +642,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/1
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getSubstation()
     {
@@ -668,9 +666,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/1
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getInviteFriend()
     {
@@ -704,9 +702,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/5/1
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getInvite()
     {
@@ -729,9 +727,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/30
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getFriendList()
     {
@@ -790,9 +788,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/30
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getUserExtend()
     {
@@ -846,30 +844,58 @@ class IndexController extends BaseApiController
 
     /**
      * 获取话费套餐列表
-     * Author: Jarshs
-     * 2025/4/30
+     *
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
      */
-    public function getMealList()
+    public function getMealList(): Json
     {
-        $meal_list = SetMeal::where(['type' => 1])->order('sort','desc')->field('id,name,type,discount,price')->select()->toArray();
-        foreach ($meal_list as &$item) {
-            $userMeal = UserMealDiscount::where(['user_id' => $this->userId, 'meal_id' => $item['id']])->find();
-            if ($userMeal) {
-                $item['discount'] = $userMeal->discount;
-            }
-            // 计算折扣价
-            $discountedPrice = number_format($item['price'] * ($item['discount'] / 10), 2);
-            $item['discountedPrice'] = $discountedPrice;
-            // 计算优惠价格
-            $item['price2'] = number_format($item['price'] - $discountedPrice,2);
+        $type = 1;
+        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+
+        $newData = [];
+        foreach ($mealList as $value) {
+            $newData[] = [
+                'id' => $value['id'],
+                'price' => $value['price'],
+                'name' => $value['name'],
+                'discount' => $value['discount'],
+                'discountedPrice' => $value['discounted_price'],
+                'price2' => $value['price2'],
+                'type' => $value['type'],
+            ];
         }
 
         return $this->success('',[
-            'list' => $meal_list,
+            'list' => $newData,
+            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+        ]);
+    }
+
+    /**
+     * 获取电费套餐列表
+     *
+     * @return Json
+     */
+    public function getMealElectricityList(): Json
+    {
+        $type = 2;
+        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+
+        $newData = [];
+        foreach ($mealList as $value) {
+            $newData[] = [
+                'id' => $value['id'],
+                'price' => $value['price'],
+                'name' => $value['name'],
+                'discount' => $value['discount'],
+                'discountedPrice' => $value['discounted_price'],
+                'price2' => $value['price2'],
+                'type' => $value['type'],
+            ];
+        }
+
+        return $this->success('',[
+            'list' => $newData,
             'reference_rate' => ConfigService::get('website', 'reference_rate', '')
         ]);
     }
@@ -879,9 +905,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/30
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getNoticeDetail()
     {
@@ -900,9 +926,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/30
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getNoticeList()
     {
@@ -936,9 +962,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/30
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getIndexConfig()
     {
@@ -955,9 +981,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/29
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getOnePayType()
     {
@@ -1028,9 +1054,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/10
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function cancelAccount()
     {
@@ -1058,9 +1084,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/9
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function changeEmailStatus()
     {
@@ -1090,9 +1116,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/9
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getEmailStatus()
     {
@@ -1111,9 +1137,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/8
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function changeNickname()
     {
@@ -1135,9 +1161,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/8
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function changeAvatar()
     {
@@ -1193,9 +1219,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/7
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function logout()
     {
@@ -1208,9 +1234,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/6
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function getUserInfo()
     {
@@ -1233,9 +1259,9 @@ class IndexController extends BaseApiController
      * Author: Jarshs
      * 2025/4/6
      * @return string|Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public function login()
     {
@@ -1426,9 +1452,9 @@ class IndexController extends BaseApiController
      * @param $email
      * @param $code
      * @return bool
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
     public static function verifyCode($email, $code)
     {
@@ -1491,9 +1517,9 @@ class IndexController extends BaseApiController
     /**
      * @notes 首页数据
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      * @author 段誉
      * @date 2022/9/21 19:15
      */
@@ -1507,9 +1533,9 @@ class IndexController extends BaseApiController
     /**
      * @notes 全局配置
      * @return Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      * @author 段誉
      * @date 2022/9/21 19:41
      */

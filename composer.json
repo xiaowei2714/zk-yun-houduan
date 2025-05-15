@@ -38,7 +38,8 @@
         "phpmailer/phpmailer": "^6.9",
         "endroid/qr-code": "^4.8",
         "predis/predis": "*",
-        "topthink/think-queue": "~3.0"
+        "topthink/think-queue": "~3.0",
+        "ext-bcmath": "*"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",

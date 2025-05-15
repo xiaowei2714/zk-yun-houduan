@@ -85,6 +85,7 @@ class UserTokenCache extends BaseCache
 
         $ttl = new \DateTime(Date('Y-m-d H:i:s', $userSession->expire_time));
         $this->set($this->prefix . $token, $userInfo, $ttl);
+
         return $this->getUserInfo($token);
     }
 
