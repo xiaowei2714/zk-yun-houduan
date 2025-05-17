@@ -5,7 +5,10 @@ namespace app\adminapi\controller;
 use app\adminapi\lists\ConsumeRechargeLists;
 use app\adminapi\logic\ConsumeRechargeLogic;
 use app\adminapi\validate\ConsumeRechargeValidate;
+use app\common\service\ConsumeRechargeService;
+use think\facade\Log;
 use think\response\Json;
+use Exception;
 
 /**
  * 话费、电费充值
@@ -21,7 +24,12 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function lists(): Json
     {
-        return $this->dataLists(new ConsumeRechargeLists());
+        try {
+            return $this->dataLists(new ConsumeRechargeLists());
+        } catch (Exception $e) {
+            Log::record('Exception: rechargeList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 
     /**
@@ -31,8 +39,13 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function sum(): Json
     {
-        $data = (new ConsumeRechargeLists())->sum();
-        return $this->success('', ['sum' => number_format($data, 2)]);
+        try {
+            $data = (new ConsumeRechargeLists())->sum();
+            return $this->success('', ['sum' => number_format($data, 2)]);
+        } catch (Exception $e) {
+            Log::record('Exception: rechargingSum Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 
     /**
@@ -42,29 +55,36 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setRecharging(): Json
     {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+        try {
 
-        $info = ConsumeRechargeLogic::info($params['id']);
-        if (empty($info) || empty($info['id'])) {
-            return $this->fail('不存在的数据，请刷新页面后再试');
-        }
-        if ($info['status'] == 2) {
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
+            $info = ConsumeRechargeLogic::info($params['id']);
+            if (empty($info) || empty($info['id'])) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
+            }
+            if ($info['status'] == 2) {
+                return $this->success('设置成功', [], 1, 1);
+            }
+            if ($info['status'] == 3) {
+                return $this->fail('设置失败，当前状态为已成功');
+            }
+            if ($info['status'] == 4) {
+                return $this->fail('设置失败，当前状态为已失败');
+            }
+
+            $res = ConsumeRechargeLogic::setRecharging($info['id']);
+
+            if (!$res) {
+                return $this->fail('设置失败');
+            }
+
             return $this->success('设置成功', [], 1, 1);
-        }
-        if ($info['status'] == 3) {
-            return $this->fail('设置失败，当前状态为已成功');
-        }
-        if ($info['status'] == 4) {
-            return $this->fail('设置失败，当前状态为已失败');
-        }
 
-        $res = ConsumeRechargeLogic::setRecharging($info['id']);
-
-        if (!$res) {
-            return $this->fail('设置失败');
+        } catch (Exception $e) {
+            Log::record('Exception: setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
         }
-
-        return $this->success('设置成功', [], 1, 1);
     }
 
     /**
@@ -74,53 +94,60 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setBatchRecharging(): Json
     {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+        try {
 
-        $data = ConsumeRechargeLogic::getData($params['ids']);
-        if (empty($data)) {
-            return $this->fail('不存在的数据，请刷新页面后再试');
-        }
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
 
-        $selectIds = [];
-        $updateIds = [];
-        $failMsg = '';
-        foreach ($data as $value) {
-
-            $selectIds[] = $value['id'];
-
-            if ($value['status'] == 2) {
-                continue;
-            }
-            if ($value['status'] == 3) {
-                $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已成功；';
-                continue;
-            }
-            if ($value['status'] == 4) {
-                $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已失败；';
-                continue;
+            $data = ConsumeRechargeLogic::getData($params['ids']);
+            if (empty($data)) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
             }
 
-            $updateIds[] = $value['id'];
-        }
+            $selectIds = [];
+            $updateIds = [];
+            $failMsg = '';
+            foreach ($data as $value) {
 
-        if (!empty($updateIds)) {
-            $res = ConsumeRechargeLogic::setBatchRecharging($updateIds);
-            if (!$res) {
-                return $this->fail('批量设置失败');
+                $selectIds[] = $value['id'];
+
+                if ($value['status'] == 2) {
+                    continue;
+                }
+                if ($value['status'] == 3) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已成功；';
+                    continue;
+                }
+                if ($value['status'] == 4) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已失败；';
+                    continue;
+                }
+
+                $updateIds[] = $value['id'];
             }
-        }
 
-        if (!empty($failMsg)) {
-            return $this->fail('部分失败：' . $failMsg);
-        }
+            if (!empty($updateIds)) {
+                $res = ConsumeRechargeLogic::setBatchRecharging($updateIds);
+                if (!$res) {
+                    return $this->fail('批量设置失败');
+                }
+            }
 
-        $diffIds = array_diff($params['ids'], $selectIds);
-        if (!empty($diffIds)) {
-            $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 设置失败，找不到订单';
-            return $this->fail($failMsg);
-        }
+            if (!empty($failMsg)) {
+                return $this->fail('部分失败：' . $failMsg);
+            }
 
-        return $this->success('设置成功', [], 1, 1);
+            $diffIds = array_diff($params['ids'], $selectIds);
+            if (!empty($diffIds)) {
+                $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 设置失败，找不到订单';
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('设置成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: setBatchRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 
     /**
@@ -130,26 +157,33 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setSuccess(): Json
     {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+        try {
 
-        $info = ConsumeRechargeLogic::info($params['id']);
-        if (empty($info) || empty($info['id'])) {
-            return $this->fail('不存在的数据，请刷新页面后再试');
-        }
-        if ($info['status'] == 3) {
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
+            $info = ConsumeRechargeLogic::info($params['id']);
+            if (empty($info) || empty($info['id'])) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
+            }
+            if ($info['status'] == 3) {
+                return $this->success('设置成功', [], 1, 1);
+            }
+            if ($info['status'] == 4) {
+                return $this->fail('设置失败，当前状态为已失败');
+            }
+
+            $res = ConsumeRechargeLogic::setSuccess($info['id']);
+
+            if (!$res) {
+                return $this->fail('设置失败');
+            }
+
             return $this->success('设置成功', [], 1, 1);
-        }
-        if ($info['status'] == 4) {
-            return $this->fail('设置失败，当前状态为已失败');
-        }
 
-        $res = ConsumeRechargeLogic::setSuccess($info['id']);
-
-        if (!$res) {
-            return $this->fail('设置失败');
+        } catch (Exception $e) {
+            Log::record('Exception: setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
         }
-
-        return $this->success('设置成功', [], 1, 1);
     }
 
     /**
@@ -159,49 +193,56 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setBatchSuccess(): Json
     {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+        try {
 
-        $data = ConsumeRechargeLogic::getData($params['ids']);
-        if (empty($data)) {
-            return $this->fail('不存在的数据，请刷新页面后再试');
-        }
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
 
-        $selectIds = [];
-        $updateIds = [];
-        $failMsg = '';
-        foreach ($data as $value) {
-
-            $selectIds[] = $value['id'];
-
-            if ($value['status'] == 3) {
-                continue;
-            }
-            if ($value['status'] == 4) {
-                $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已失败；';
-                continue;
+            $data = ConsumeRechargeLogic::getData($params['ids']);
+            if (empty($data)) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
             }
 
-            $updateIds[] = $value['id'];
-        }
+            $selectIds = [];
+            $updateIds = [];
+            $failMsg = '';
+            foreach ($data as $value) {
 
-        if (!empty($updateIds)) {
-            $res = ConsumeRechargeLogic::setBatchSuccess($updateIds);
-            if (!$res) {
-                return $this->fail('批量设置失败');
+                $selectIds[] = $value['id'];
+
+                if ($value['status'] == 3) {
+                    continue;
+                }
+                if ($value['status'] == 4) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已失败；';
+                    continue;
+                }
+
+                $updateIds[] = $value['id'];
             }
-        }
 
-        if (!empty($failMsg)) {
-            return $this->fail('部分失败：' . $failMsg);
-        }
+            if (!empty($updateIds)) {
+                $res = ConsumeRechargeLogic::setBatchSuccess($updateIds);
+                if (!$res) {
+                    return $this->fail('批量设置失败');
+                }
+            }
 
-        $diffIds = array_diff($params['ids'], $selectIds);
-        if (!empty($diffIds)) {
-            $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 设置失败，找不到订单';
-            return $this->fail($failMsg);
-        }
+            if (!empty($failMsg)) {
+                return $this->fail('部分失败：' . $failMsg);
+            }
 
-        return $this->success('设置成功', [], 1, 1);
+            $diffIds = array_diff($params['ids'], $selectIds);
+            if (!empty($diffIds)) {
+                $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 设置失败，找不到订单';
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('设置成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: setBatchSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 
     /**
@@ -211,26 +252,32 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setFail(): Json
     {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+        try {
 
-        $info = ConsumeRechargeLogic::info($params['id']);
-        if (empty($info) || empty($info['id'])) {
-            return $this->fail('不存在的数据，请刷新页面后再试');
-        }
-        if ($info['status'] == 4) {
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
+            $info = ConsumeRechargeLogic::info($params['id']);
+            if (empty($info) || empty($info['id'])) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
+            }
+            if ($info['status'] == 4) {
+                return $this->success('设置成功', [], 1, 1);
+            }
+            if ($info['status'] == 3) {
+                return $this->fail('设置失败，当前状态为已成功');
+            }
+
+            $res = ConsumeRechargeLogic::setFail($info['id']);
+            if (!$res) {
+                return $this->fail('设置失败');
+            }
+
             return $this->success('设置成功', [], 1, 1);
-        }
-        if ($info['status'] == 3) {
-            return $this->fail('设置失败，当前状态为已成功');
-        }
 
-        $res = ConsumeRechargeLogic::setFail($info['id']);
-
-        if (!$res) {
-            return $this->fail('设置失败');
+        } catch (Exception $e) {
+            Log::record('Exception: setFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
         }
-
-        return $this->success('设置成功', [], 1, 1);
     }
 
     /**
@@ -240,48 +287,174 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setBatchFail(): Json
     {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+        try {
 
-        $data = ConsumeRechargeLogic::getData($params['ids']);
-        if (empty($data)) {
-            return $this->fail('不存在的数据，请刷新页面后再试');
-        }
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
 
-        $selectIds = [];
-        $updateIds = [];
-        $failMsg = '';
-        foreach ($data as $value) {
-
-            $selectIds[] = $value['id'];
-
-            if ($value['status'] == 3) {
-                $failMsg = '设置失败，当前状态为已成功；';
-                continue;
-            }
-            if ($value['status'] == 4) {
-                continue;
+            $data = ConsumeRechargeLogic::getData($params['ids']);
+            if (empty($data)) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
             }
 
-            $updateIds[] = $value['id'];
-        }
+            $selectIds = [];
+            $failMsg = '';
+            foreach ($data as $value) {
 
-        if (!empty($updateIds)) {
-            $res = ConsumeRechargeLogic::setBatchFail($updateIds);
+                $selectIds[] = $value['id'];
+
+                if ($value['status'] == 3) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 设置失败，当前状态为已成功；';
+                    continue;
+                }
+                if ($value['status'] == 4) {
+                    continue;
+                }
+
+                $res = ConsumeRechargeLogic::setFail($value['id']);
+                if (!$res) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 设置失败';
+                }
+            }
+
+            if (!empty($failMsg)) {
+                return $this->fail('部分失败：' . $failMsg);
+            }
+
+            $diffIds = array_diff($params['ids'], $selectIds);
+            if (!empty($diffIds)) {
+                $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 设置失败，找不到订单';
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('设置成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: setBatchFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 更新余额
+     *
+     * @return Json
+     */
+    public function genBalance(): Json
+    {
+        try {
+
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
+            $info = ConsumeRechargeLogic::info($params['id']);
+            if (empty($info) || empty($info['id'])) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
+            }
+
+            if ($info['type'] == 1) {
+                $requestData = (new ConsumeRechargeService())->getPhoneBalance($info['phone']);
+                if (empty($requestData)) {
+                    return $this->fail('暂不支持的手机号充值');
+                }
+                if (!$requestData['is_success']) {
+                    return $this->fail(!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的手机号充值');
+                }
+
+                $price = $requestData['cur_fee'];
+            } else {
+                $requestData = (new ConsumeRechargeService())->getElectricityBalance($info['account'], ($info['name_area'] + 1));
+                if (empty($requestData)) {
+                    return $this->fail('暂不支持的卡号充值');
+                }
+                if (!$requestData['is_success']) {
+                    return $this->fail(!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的卡号充值');
+                }
+
+                $price = $requestData['owed_balance'];
+            }
+
+            $res = ConsumeRechargeLogic::setBalance($info['id'], $price);
             if (!$res) {
-                return $this->fail('批量设置失败');
+                return $this->fail('更新失败');
             }
-        }
 
-        if (!empty($failMsg)) {
-            return $this->fail('部分失败：' . $failMsg);
-        }
+            return $this->success('更新成功', [], 1, 1);
 
-        $diffIds = array_diff($params['ids'], $selectIds);
-        if (!empty($diffIds)) {
-            $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 设置失败，找不到订单';
-            return $this->fail($failMsg);
+        } catch (Exception $e) {
+            Log::record('Exception: setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
         }
+    }
 
-        return $this->success('设置成功', [], 1, 1);
+    /**
+     * 批量更新余额
+     *
+     * @return Json
+     */
+    public function batchGenBalance(): Json
+    {
+        try {
+
+            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+
+            $data = ConsumeRechargeLogic::getData($params['ids']);
+            if (empty($data)) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
+            }
+
+            $selectIds = [];
+            $failMsg = '';
+            foreach ($data as $value) {
+
+                $selectIds[] = $value['id'];
+
+                $price = 0;
+                if ($value['type'] == 1) {
+                    $requestData = (new ConsumeRechargeService())->getPhoneBalance($value['account']);
+                    if (empty($requestData)) {
+                        $failMsg .= '单号：' . $value['sn'] . ' 暂不支持的手机号充值';
+                        continue;
+                    }
+                    if (!$requestData['is_success']) {
+                        $failMsg .= '单号：' . $value['sn'] . ' ' . (!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的手机号充值');
+                        continue;
+                    }
+
+                    $price = $requestData['cur_fee'];
+                } else {
+                    $requestData = (new ConsumeRechargeService())->getElectricityBalance($value['account'], ($value['name_area'] + 1));
+                    if (empty($requestData)) {
+                        $failMsg .= '单号：' . $value['sn'] . ' 暂不支持的卡号充值';
+                        continue;
+                    }
+                    if (!$requestData['is_success']) {
+                        $failMsg .= '单号：' . $value['sn'] . ' ' . (!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的卡号充值');
+                        continue;
+                    }
+
+                    $price = $requestData['owed_balance'];
+                }
+
+                $res = ConsumeRechargeLogic::setBalance($value['id'], $price);
+                if (!$res) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 更新失败';
+                }
+            }
+
+            if (!empty($failMsg)) {
+                return $this->fail('部分失败：' . $failMsg);
+            }
+
+            $diffIds = array_diff($params['ids'], $selectIds);
+            if (!empty($diffIds)) {
+                $failMsg = '部分失败，ID：' . implode('、', $diffIds) . ' 更新失败，找不到订单';
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('更新成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: setBatchRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 }

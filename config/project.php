@@ -77,7 +77,7 @@ return [
 
     //上传文件的格式 (文件)
     'file_file' => [
-        'zip','rar','txt','pdf','doc','docx','xls','xlsx','ppt','pptx','csv','txt','ftr','7z','gz'
+        'zip', 'rar', 'txt', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt', 'ftr', '7z', 'gz'
     ],
 
     // 登录设置
@@ -100,6 +100,11 @@ return [
     'decorate' => [
         // 底部导航栏样式设置
         'tabbar_style' => ['default_color' => '#999999', 'selected_color' => '#c455ff'],
-    ]
+    ],
 
+    'area' => [
+        "北京", "天津", "辽宁", "江苏", "浙江", "山东", "湖南", "陕西", "冀北", "新疆", "宁夏", "安徽", "重庆", "福建", "河南", "青海", "湖北", "蒙东", "黑龙江", "吉林", "上海", "甘肃", "山西", "四川", "江西", "河北"
+    ],
+
+    'recharge_key' => 'T7wxGRMUgYGySPIViThXoVwLSV',
 ];

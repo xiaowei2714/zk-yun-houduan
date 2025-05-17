@@ -39,7 +39,8 @@
         "endroid/qr-code": "^4.8",
         "predis/predis": "*",
         "topthink/think-queue": "~3.0",
-        "ext-bcmath": "*"
+        "ext-bcmath": "*",
+        "ext-curl": "*"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",

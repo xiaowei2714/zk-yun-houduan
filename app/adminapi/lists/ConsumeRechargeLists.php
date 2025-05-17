@@ -4,6 +4,7 @@ namespace app\adminapi\lists;
 
 use app\common\lists\ListsExcelInterface;
 use app\common\model\ConsumeRecharge;
+use think\facade\Config;
 
 /**
  * 话费、电费充值列表
@@ -36,12 +37,14 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             'cr.sn',
             'cr.user_id',
             'cr.account',
+            'cr.account_type',
             'cr.name_area',
             'cr.recharge_price',
             'cr.recharge_up_price',
             'cr.recharge_down_price',
             'cr.balances_price',
             'cr.status',
+            'cr.type',
             'cr.pay_time',
             'cr.create_time',
             'u.nickname'
@@ -58,6 +61,8 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             return [];
         }
 
+        $areaData = Config::get('project.area');
+
         $newData = [];
         foreach ($lists as $item) {
             $cTime = '';
@@ -71,11 +76,35 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
                 $cTime = sprintf("%02d时%02d分%02d秒", $hours, $minutes, $seconds);
             }
 
+            $accountTypeShow = '';
+            switch ($item['account_type']) {
+                case 1:
+                    $accountTypeShow = ' 移动';
+                    break;
+
+                case 2:
+                    $accountTypeShow = ' 联通';
+                    break;
+
+                case 3:
+                    $accountTypeShow = ' 电信';
+                    break;
+
+                case 4:
+                    $accountTypeShow = ' 虚拟';
+                    break;
+            }
+
+            $nameArea = $item['name_area'];
+            if ($item['type'] == 2) {
+                $nameArea = $areaData[$item['name_area']] ?? '';
+            }
+
             $newData[] = [
                 'id' => $item['id'],
                 'sn' => $item['sn'],
                 'user_show' => '[ID: ' . $item['user_id'] . '] ' . $item['nickname'],
-                'account_show' => $item['account'] . ' ' . $item['name_area'],
+                'account_show' => $item['account'] . $accountTypeShow . ' ' . $nameArea,
                 'price' => $item['recharge_price'],
                 'up_price' => $item['recharge_up_price'],
                 'down_price' => $item['recharge_down_price'],
@@ -143,6 +172,12 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
         if (!empty($params['start_time']) && !empty($params['end_time'])) {
             $newData[] = [
                 $pre . 'create_time', 'BETWEEN', [strtotime($params['start_time']), strtotime($params['end_time'])]
+            ];
+        }
+
+        if (!empty($params['account_type'])) {
+            $newData[] = [
+                $pre . 'account_type', '=', $params['account_type']
             ];
         }
 
