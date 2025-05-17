@@ -34,6 +34,8 @@ class ConsumeRechargeService
         }
 
         $configKey = Config::get('project.recharge_key');
+        $operatorConf = Config::get('project.operator');
+
         $url = 'https://ap.xiaoyun.top/api/xy/cx';
 
         $params = [
@@ -51,26 +53,7 @@ class ConsumeRechargeService
         }
 
         $code = $data['code'] ?? '';
-
-        $ispId = null;
         $isp = $data['data']['isp'] ?? '';
-        switch ($isp) {
-            case '移动':
-                $ispId = 1;
-                break;
-
-            case '联通':
-                $ispId = 2;
-                break;
-
-            case '电信':
-                $ispId = 3;
-                break;
-
-            case '虚拟':
-                $ispId = 4;
-                break;
-        }
 
         return [
             'is_success' => $code == 200,
@@ -80,7 +63,7 @@ class ConsumeRechargeService
             'cur_fee' => $data['data']['curFee'] ?? '',
             'area' => $data['data']['area'] ?? '',
             'isp' => $isp,
-            'isp_id' => $ispId
+            'isp_id' => $operatorConf[$isp] ?? ''
         ];
     }
 
@@ -102,6 +85,7 @@ class ConsumeRechargeService
                 'balance' => 101.00,
                 'owed_balance' => 200.50,
                 'avail_balance' => 300.50,
+                'real_balance' => 300.50,
             ];
         }
 
@@ -132,6 +116,7 @@ class ConsumeRechargeService
             'balance' => $data['data']['balance'] ?? 0,
             'owed_balance' => $data['data']['owedBalance'] ?? 0,
             'avail_balance' => $data['data']['availableBalance'] ?? 0,
+            'real_balance' => $data['data']['availableBalance'] ?? 0,
         ];
     }
 
@@ -178,7 +163,7 @@ class ConsumeRechargeService
             case 'POST':
                 $option[CURLOPT_POST] = TRUE;
                 if (!empty($params)) {
-                    $option[CURLOPT_POSTFIELDS] = json_encode($params);
+                    $option[CURLOPT_POSTFIELDS] = $params;
                 }
                 break;
         }

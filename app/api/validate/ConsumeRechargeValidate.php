@@ -15,15 +15,18 @@ use app\common\validate\BaseValidate;
 class ConsumeRechargeValidate extends BaseValidate
 {
     protected $rule = [
+        'id' =>  ['require', 'number'],
         'meal_id' =>  ['require', 'number'],
         'meal_discount' => 'require',
         'meal_discounted_price' => 'require',
         'money' => 'require|gt:0|checkMoney',
         'phone' => ['require', 'regex' => '/^1[3456789]\d{9}$/'],
         'number' => ['require'],
+        'type' => ['require']
     ];
 
     protected $message = [
+        'id' => 'ID不能为空',
         'meal_id' => '充值选项不能为空',
         'meal_discount' => '充值选项不能为空',
         'meal_discounted_price' => '充值选项不能为空',
@@ -33,7 +36,28 @@ class ConsumeRechargeValidate extends BaseValidate
         'phone.regex' => '请正确输入手机号',
         'phone.batch_data' => '请正确输入手机号',
         'number.require' => '户号不能为空',
+        'type' => '订单类型不能为空',
     ];
+
+    /**
+     * 列表
+     *
+     * @return ConsumeRechargeValidate
+     */
+    public function sceneList()
+    {
+        return $this->only(['type']);
+    }
+
+    /**
+     * 列表
+     *
+     * @return ConsumeRechargeValidate
+     */
+    public function sceneId()
+    {
+        return $this->only(['id']);
+    }
 
     /**
      * 话费验证

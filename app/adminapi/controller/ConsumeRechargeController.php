@@ -369,7 +369,7 @@ class ConsumeRechargeController extends BaseAdminController
                     return $this->fail(!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的卡号充值');
                 }
 
-                $price = $requestData['owed_balance'];
+                $price = $requestData['real_balance'];
             }
 
             $res = ConsumeRechargeLogic::setBalance($info['id'], $price);
@@ -431,7 +431,7 @@ class ConsumeRechargeController extends BaseAdminController
                         continue;
                     }
 
-                    $price = $requestData['owed_balance'];
+                    $price = $requestData['real_balance'];
                 }
 
                 $res = ConsumeRechargeLogic::setBalance($value['id'], $price);
