@@ -343,7 +343,7 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('不存在的数据，请刷新页面后再试');
             }
 
-            if ($info['type'] == 1) {
+            if ($info['type'] == 1 || $info['type'] == 3) {
                 $requestData = (new ConsumeRechargeService())->getPhoneBalance($info['phone']);
                 if (empty($requestData)) {
                     return $this->fail('暂不支持的手机号充值');
@@ -353,7 +353,7 @@ class ConsumeRechargeController extends BaseAdminController
                 }
 
                 $price = $requestData['cur_fee'];
-            } else {
+            } elseif ($info['type'] == 2) {
                 $requestData = (new ConsumeRechargeService())->getElectricityBalance($info['account'], ($info['name_area'] + 1));
                 if (empty($requestData)) {
                     return $this->fail('暂不支持的卡号充值');
@@ -400,7 +400,7 @@ class ConsumeRechargeController extends BaseAdminController
                 $selectIds[] = $value['id'];
 
                 $price = 0;
-                if ($value['type'] == 1) {
+                if ($value['type'] == 1 || $value['type'] == 3) {
                     $requestData = (new ConsumeRechargeService())->getPhoneBalance($value['account']);
                     if (empty($requestData)) {
                         $failMsg .= '单号：' . $value['sn'] . ' 暂不支持的手机号充值';
@@ -412,7 +412,7 @@ class ConsumeRechargeController extends BaseAdminController
                     }
 
                     $price = $requestData['cur_fee'];
-                } else {
+                } elseif ($value['type'] == 2) {
                     $requestData = (new ConsumeRechargeService())->getElectricityBalance($value['account'], ($value['name_area'] + 1));
                     if (empty($requestData)) {
                         $failMsg .= '单号：' . $value['sn'] . ' 暂不支持的卡号充值';

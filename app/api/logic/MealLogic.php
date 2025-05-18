@@ -22,8 +22,8 @@ class MealLogic extends BaseLogic
     {
         try {
             return SetMeal::where(['type' => $type])
-                ->order('sort','desc')
                 ->field('id,name,type,discount,price')
+                ->order('sort','desc')
                 ->select()
                 ->toArray();
         } catch (\Exception $e) {

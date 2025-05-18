@@ -872,6 +872,35 @@ class IndexController extends BaseApiController
     }
 
     /**
+     * 获取快速充值套餐列表
+     *
+     * @return Json
+     */
+    public function getMealQuicklyList(): Json
+    {
+        $type = 3;
+        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+
+        $newData = [];
+        foreach ($mealList as $value) {
+            $newData[] = [
+                'id' => $value['id'],
+                'price' => $value['price'],
+                'name' => $value['name'],
+                'discount' => $value['discount'],
+                'discountedPrice' => $value['discounted_price'],
+                'price2' => $value['price2'],
+                'type' => $value['type'],
+            ];
+        }
+
+        return $this->success('',[
+            'list' => $newData,
+            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+        ]);
+    }
+
+    /**
      * 获取电费套餐列表
      *
      * @return Json
