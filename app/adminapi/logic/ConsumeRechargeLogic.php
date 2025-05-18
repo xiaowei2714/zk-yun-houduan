@@ -28,7 +28,8 @@ class ConsumeRechargeLogic extends BaseLogic
     {
         try {
             return ConsumeRecharge::where('id', $id)->find();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -47,7 +48,8 @@ class ConsumeRechargeLogic extends BaseLogic
                 ->whereIn('id', $ids)
                 ->select()
                 ->toArray();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-getData Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -71,7 +73,8 @@ class ConsumeRechargeLogic extends BaseLogic
 
             return !empty($res);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -95,7 +98,8 @@ class ConsumeRechargeLogic extends BaseLogic
 
             return !empty($res);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setBatchRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -121,7 +125,8 @@ class ConsumeRechargeLogic extends BaseLogic
 
             return !empty($res);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -147,7 +152,8 @@ class ConsumeRechargeLogic extends BaseLogic
 
             return !empty($res);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setBatchSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -219,8 +225,8 @@ class ConsumeRechargeLogic extends BaseLogic
             Db::commit();
             return true;
 
-        } catch (\Exception $e) {
-            Log::record('Exception: SqlRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             Db::rollback();
             return false;
         }
@@ -261,8 +267,8 @@ class ConsumeRechargeLogic extends BaseLogic
             Db::commit();
             return true;
 
-        } catch (\Exception $e) {
-            Log::record('Exception: setBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             Db::rollback();
             return false;
         }

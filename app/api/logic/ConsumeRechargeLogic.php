@@ -64,7 +64,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 ->toArray();
 
         } catch (Exception $e) {
-            Log::record('Exception: SqlList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: Sql-ConsumeRechargeLogic-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return false;
         }
     }
@@ -106,7 +106,7 @@ class ConsumeRechargeLogic extends BaseLogic
         try {
             return ConsumeRecharge::where('id', '=', $id)->find();
         } catch (Exception $e) {
-            Log::record('Exception: SqlInfo Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: Sql-ConsumeRechargeLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return false;
         }
     }
@@ -188,7 +188,7 @@ class ConsumeRechargeLogic extends BaseLogic
             return true;
 
         } catch (Exception $e) {
-            Log::record('Exception: SqlRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: Sql-ConsumeRechargeLogic-recharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError('充值失败');
             Db::rollback();
             return false;
@@ -200,6 +200,7 @@ class ConsumeRechargeLogic extends BaseLogic
      *
      * @param $id
      * @param $price
+     * @param $queryPrice
      * @return bool
      */
     public static function setBalance($id, $price, $queryPrice): bool
@@ -274,7 +275,7 @@ class ConsumeRechargeLogic extends BaseLogic
             return true;
 
         } catch (Exception $e) {
-            Log::record('Exception: setBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError('记录失败');
             Db::rollback();
             return false;
@@ -335,7 +336,7 @@ class ConsumeRechargeLogic extends BaseLogic
             return true;
 
         } catch (Exception $e) {
-            Log::record('Exception: SqlCancel Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: Sql-ConsumeRechargeLogic-cancel Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             Db::rollback();
             return false;
         }

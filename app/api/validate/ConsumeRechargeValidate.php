@@ -21,6 +21,7 @@ class ConsumeRechargeValidate extends BaseValidate
         'meal_discounted_price' => 'require',
         'money' => 'require|gt:0|checkMoney',
         'phone' => ['require', 'regex' => '/^1[3456789]\d{9}$/'],
+        'batch_data' => ['require'],
         'number' => ['require'],
         'type' => ['require']
     ];
@@ -34,7 +35,7 @@ class ConsumeRechargeValidate extends BaseValidate
         'money.gt' => '请填写大于0的充值金额',
         'phone.require' => '手机号不能为空',
         'phone.regex' => '请正确输入手机号',
-        'phone.batch_data' => '请正确输入手机号',
+        'batch_data' => '请正确输入手机号',
         'number.require' => '户号不能为空',
         'type' => '订单类型不能为空',
     ];

@@ -29,12 +29,12 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function list(): Json
     {
-        try {
-            $params = (new ConsumeRechargeValidate())->get()->goCheck('list', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal']
-            ]);
+        $params = (new ConsumeRechargeValidate())->get()->goCheck('list', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal']
+        ]);
 
+        try {
             switch ($params['type']) {
                 case 'mobile':
                     $type = 1;
@@ -142,7 +142,7 @@ class ConsumeRechargeController extends BaseApiController
             ]);
 
         } catch (Exception $e) {
-            Log::record('Exception: apiList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -154,12 +154,12 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function info(): Json
     {
-        try {
-            $params = (new ConsumeRechargeValidate())->get()->goCheck('id', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal']
-            ]);
+        $params = (new ConsumeRechargeValidate())->get()->goCheck('id', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal']
+        ]);
 
+        try {
             $userInfo = UserLogic::info($this->userId);
             if (empty($userInfo)) {
                 return $this->fail('当前用户不可用，请联系客服');
@@ -203,7 +203,7 @@ class ConsumeRechargeController extends BaseApiController
             ]);
 
         } catch (Exception $e) {
-            Log::record('Exception: apiInfo Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -251,7 +251,7 @@ class ConsumeRechargeController extends BaseApiController
             return $this->data($newData);
 
         } catch (Exception $e) {
-            Log::record('Exception: apiList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-everyCount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -263,13 +263,13 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function phoneRecharge(): Json
     {
-        try {
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('phoneRecharge', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal'],
-                'type' => 1
-            ]);
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('phoneRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 1
+        ]);
 
+        try {
             if (!isset($params['name'])) {
                 $params['name'] = '';
             }
@@ -331,7 +331,7 @@ class ConsumeRechargeController extends BaseApiController
             ]);
 
         } catch (Exception $e) {
-            Log::record('Exception: phoneRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-phoneRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -343,14 +343,13 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function batchPhoneRecharge(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('batchPhoneRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 1
+        ]);
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('batchPhoneRecharge', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal'],
-                'type' => 1
-            ]);
-
             $userInfo = UserLogic::info($this->userId);
             if (empty($userInfo)) {
                 return $this->fail('当前用户不可用，请联系客服');
@@ -360,7 +359,7 @@ class ConsumeRechargeController extends BaseApiController
             }
 
             // 批量数据
-            $batchData = explode(PHP_EOL, $params['batchData']);
+            $batchData = explode(PHP_EOL, $params['batch_data']);
 
             // 获取设定的充值信息
             $mealInfo = (new UserMealService())->getMealInfo($params['meal_id'], $this->userId);
@@ -443,7 +442,7 @@ class ConsumeRechargeController extends BaseApiController
             ]);
 
         } catch (Exception $e) {
-            Log::record('Exception: batchPhoneRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-batchPhoneRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -455,13 +454,13 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function electricityRecharge(): Json
     {
-        try {
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('electricityRecharge', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal'],
-                'type' => 2
-            ]);
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('electricityRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 2
+        ]);
 
+        try {
             if (strlen($params['number']) > 30) {
                 return $this->fail('户号不能超过30个字符');
             }
@@ -527,7 +526,7 @@ class ConsumeRechargeController extends BaseApiController
             ]);
 
         } catch (Exception $e) {
-            Log::record('Exception: electricityRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-electricityRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -539,14 +538,13 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function batchElectricityRecharge(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('batchElectricityRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 2
+        ]);
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('batchElectricityRecharge', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal'],
-                'type' => 2
-            ]);
-
             $userInfo = UserLogic::info($this->userId);
             if (empty($userInfo)) {
                 return $this->fail('当前用户不可用，请联系客服');
@@ -570,7 +568,7 @@ class ConsumeRechargeController extends BaseApiController
                 return $this->fail('充值实付金额发生变化，请重新进入电费充值页面');
             }
 
-            $batchData = explode(PHP_EOL, $params['batchData']);
+            $batchData = explode(PHP_EOL, $params['batch_data']);
 
             // 比较用户余额
             $total = bcmul($params['meal_discounted_price'], count($batchData), 2);
@@ -645,7 +643,7 @@ class ConsumeRechargeController extends BaseApiController
                 'msg' => $msg
             ]);
         } catch (Exception $e) {
-            Log::record('Exception: batchElectricityRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-batchElectricityRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -657,13 +655,12 @@ class ConsumeRechargeController extends BaseApiController
      */
     public function cancelRecharge(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('id', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal']
+        ]);
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('id', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal']
-            ]);
-
             $userInfo = UserLogic::info($this->userId);
             if (empty($userInfo)) {
                 return $this->fail('当前用户不可用，请联系客服');
@@ -680,25 +677,24 @@ class ConsumeRechargeController extends BaseApiController
             return $this->success('取消成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: apiCancelRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-cancelRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
 
     /**
-     * 获取余额
+     * 更新余额
      *
      * @return Json
      */
     public function genBalance(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('id', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal']
+        ]);
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('id', [
-                'user_id' => $this->userId,
-                'terminal' => $this->userInfo['terminal']
-            ]);
-
             $userInfo = UserLogic::info($this->userId);
             if (empty($userInfo)) {
                 return $this->fail('当前用户不可用，请联系客服');
@@ -772,7 +768,7 @@ class ConsumeRechargeController extends BaseApiController
             return $this->success('更新成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: apiGenBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-genBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }

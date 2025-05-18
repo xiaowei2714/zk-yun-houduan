@@ -27,7 +27,7 @@ class ConsumeRechargeController extends BaseAdminController
         try {
             return $this->dataLists(new ConsumeRechargeLists());
         } catch (Exception $e) {
-            Log::record('Exception: rechargeList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-lists Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -43,7 +43,7 @@ class ConsumeRechargeController extends BaseAdminController
             $data = (new ConsumeRechargeLists())->sum();
             return $this->success('', ['sum' => number_format($data, 2)]);
         } catch (Exception $e) {
-            Log::record('Exception: rechargingSum Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-sum Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -55,10 +55,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setRecharging(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
-
             $info = ConsumeRechargeLogic::info($params['id']);
             if (empty($info) || empty($info['id'])) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -82,7 +81,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -94,10 +93,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setBatchRecharging(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
-
             $data = ConsumeRechargeLogic::getData($params['ids']);
             if (empty($data)) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -145,7 +143,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setBatchRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-setBatchRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -157,10 +155,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setSuccess(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
-
             $info = ConsumeRechargeLogic::info($params['id']);
             if (empty($info) || empty($info['id'])) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -181,7 +178,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -193,10 +190,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setBatchSuccess(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
-
             $data = ConsumeRechargeLogic::getData($params['ids']);
             if (empty($data)) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -240,7 +236,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setBatchSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-setBatchSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -252,10 +248,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setFail(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
-
             $info = ConsumeRechargeLogic::info($params['id']);
             if (empty($info) || empty($info['id'])) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -275,7 +270,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-setFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -287,10 +282,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function setBatchFail(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
-
             $data = ConsumeRechargeLogic::getData($params['ids']);
             if (empty($data)) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -329,7 +323,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setBatchFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-setBatchFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -341,10 +335,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function genBalance(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
-
             $info = ConsumeRechargeLogic::info($params['id']);
             if (empty($info) || empty($info['id'])) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -380,7 +373,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('更新成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-genBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -392,10 +385,9 @@ class ConsumeRechargeController extends BaseAdminController
      */
     public function batchGenBalance(): Json
     {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
+
         try {
-
-            $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
-
             $data = ConsumeRechargeLogic::getData($params['ids']);
             if (empty($data)) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
@@ -453,7 +445,7 @@ class ConsumeRechargeController extends BaseAdminController
             return $this->success('更新成功', [], 1, 1);
 
         } catch (Exception $e) {
-            Log::record('Exception: setBatchRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-ConsumeRechargeController-batchGenBalance Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
