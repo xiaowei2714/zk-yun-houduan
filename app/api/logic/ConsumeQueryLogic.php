@@ -4,9 +4,8 @@ namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
 use app\common\model\ConsumeQuery;
-use app\common\model\ConsumeRecharge;
 use app\common\model\user\User;
-use app\common\model\user\UserAccountLog;
+use app\common\model\UserMoneyLog;
 use think\facade\Db;
 use think\facade\Log;
 use Exception;
@@ -169,28 +168,22 @@ class ConsumeQueryLogic extends BaseLogic
                 return false;
             }
 
-            $sn = generate_sn(ConsumeRecharge::class, 'sn');
+            // 流水
+            $billData = [
+                'user_id' => $params['user_id'],
+                'type' => 4,
+                'desc' => '查询' . ($params['type'] == 1 ? '话费' : '电费') . '扣除',
+                'change_type' => 2,
+                'change_money' => $params['pay_price'],
+                'changed_money' => $userInfo['user_money']
+            ];
 
-//            // 流水
-//            $userAccountData = [
-//                'sn' => generate_sn(ConsumeRecharge::class, 'sn'),
-//                'user_id' => $params['user_id'],
-//                'change_object' => 1,
-//                'change_type' => 0,
-//                'action' => 2,
-//                'change_amount' => $params['meal_discounted_price'],
-//                'left_amount' => $userInfo['user_money'],
-//                'source_sn' => $sn,
-//                'remark' => $params['type'] == 1 ? '话费充值扣款' : '电费充值扣款',
-//                'extra' => 'consume_recharge'
-//            ];
-//
-//            $res = UserAccountLog::create($userAccountData);
-//            if (empty($res['id'])) {
-//                self::setError('记录流水失败');
-//                Db::rollback();
-//                return false;
-//            }
+            $res = UserMoneyLog::create($billData);
+            if (empty($res['id'])) {
+                self::setError('记录流水失败');
+                Db::rollback();
+                return false;
+            }
 
             // 消费查询表
             $consumeParams = [
