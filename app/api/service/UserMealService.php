@@ -12,7 +12,7 @@ class UserMealService
      * @param $userId
      * @return array
      */
-    public function getMealList($type, $userId): array
+    public function getMealList($type, $userId, $rate): array
     {
         $mealList = (new MealLogic())->getMealList($type);
 
@@ -41,10 +41,16 @@ class UserMealService
             }
 
             // 计算折扣价
-            $tmpData['discounted_price'] = number_format(bcmul($tmpData['price'], bcdiv($tmpData['real_discount'], 10, 3), 3), 2);
+            $realDiscount = bcdiv($tmpData['real_discount'], 10, 4);
+            $discountPrice = bcmul($tmpData['price'], $realDiscount, 4);
+            $realPrice = bcdiv($discountPrice, $rate, 34);
+
+            $tmpData['discounted_price'] = number_format($realPrice, 2);
 
             // 计算优惠价格
-            $tmpData['price2'] = number_format(bcsub($tmpData['price'], $tmpData['discounted_price'], 2), 2);
+            $subPrice = bcsub($tmpData['price'], $discountPrice, 4);
+            $subRealPrice = bcdiv($subPrice, $rate, 4);
+            $tmpData['price2'] = number_format($subRealPrice, 2);
 
             $newData[] = $tmpData;
         }

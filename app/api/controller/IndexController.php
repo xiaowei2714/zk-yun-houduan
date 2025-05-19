@@ -849,8 +849,13 @@ class IndexController extends BaseApiController
      */
     public function getMealList(): Json
     {
+        $rate = ConfigService::get('website', 'reference_rate', '');
+        if (empty($rate)) {
+            return $this->fail('未获取到汇率');
+        }
+
         $type = 1;
-        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+        $mealList = (new UserMealService())->getMealList($type, $this->userId, $rate);
 
         $newData = [];
         foreach ($mealList as $value) {
@@ -867,7 +872,7 @@ class IndexController extends BaseApiController
 
         return $this->success('',[
             'list' => $newData,
-            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+            'reference_rate' => $rate
         ]);
     }
 
@@ -878,8 +883,13 @@ class IndexController extends BaseApiController
      */
     public function getMealElectricityList(): Json
     {
+        $rate = ConfigService::get('website', 'reference_rate', '');
+        if (empty($rate)) {
+            return $this->fail('未获取到汇率');
+        }
+
         $type = 2;
-        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+        $mealList = (new UserMealService())->getMealList($type, $this->userId, $rate);
 
         $newData = [];
         foreach ($mealList as $value) {
@@ -896,7 +906,7 @@ class IndexController extends BaseApiController
 
         return $this->success('',[
             'list' => $newData,
-            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+            'reference_rate' => $rate
         ]);
     }
 
@@ -907,8 +917,13 @@ class IndexController extends BaseApiController
      */
     public function getMealQuicklyList(): Json
     {
+        $rate = ConfigService::get('website', 'reference_rate', '');
+        if (empty($rate)) {
+            return $this->fail('未获取到汇率');
+        }
+
         $type = 3;
-        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+        $mealList = (new UserMealService())->getMealList($type, $this->userId, $rate);
 
         $newData = [];
         foreach ($mealList as $value) {
@@ -925,7 +940,7 @@ class IndexController extends BaseApiController
 
         return $this->success('',[
             'list' => $newData,
-            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+            'reference_rate' => $rate
         ]);
     }
 
@@ -1398,8 +1413,8 @@ class IndexController extends BaseApiController
                     throw new \Exception('邀请码无效');
                 }
                 $p_first_user_id = $inviter->id;
-                $p_second_user_id = $inviter->p_second_user_id;
-                $p_three_user_id = $inviter->p_three_user_id;
+                $p_second_user_id = $inviter->p_first_user_id;
+                $p_three_user_id = $inviter->p_second_user_id;
             }
 
             $userSn = User::createUserSn();

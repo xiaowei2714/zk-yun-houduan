@@ -6,6 +6,7 @@ use app\common\model\ConsumeRecharge;
 use app\common\logic\BaseLogic;
 use app\common\model\user\User;
 use app\common\model\user\UserAccountLog;
+use app\common\model\UserMoneyLog;
 use think\facade\Db;
 use think\facade\Log;
 use think\Model;
@@ -109,11 +110,15 @@ class ConsumeRechargeLogic extends BaseLogic
      * 设置为成功
      *
      * @param $id
+     * @param $userData
+     * @param $ratioData
      * @return bool
      */
-    public static function setSuccess($id): bool
+    public static function setSuccess($id, $userData, $ratioData): bool
     {
         try {
+            Db::startTrans();
+
             $data = [
                 'status' => 3,
                 'balances_price' => Db::raw('recharge_price'),
@@ -122,8 +127,12 @@ class ConsumeRechargeLogic extends BaseLogic
             ];
 
             $res = ConsumeRecharge::where('id', $id)->update($data);
+            if (empty($res)) {
+                throw new Exception('充值失败');
+            }
 
-            return !empty($res);
+            Db::commit();
+            return true;
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeRechargeLogic-setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
@@ -170,12 +179,30 @@ class ConsumeRechargeLogic extends BaseLogic
         try {
             Db::startTrans();
 
-            $consumeRechargeInfo =  ConsumeRecharge::where('id', $id)->find();
+            $consumeRechargeInfo = ConsumeRecharge::where('id', $id)->find();
             if (empty($consumeRechargeInfo)) {
-                throw new Exception('获取不到充值信息ID：' . $id );
+                self::setError('获取不到充值信息，ID：' . $id);
+                Db::rollback();
+                return false;
             }
             if ($consumeRechargeInfo['status'] == 4) {
                 return true;
+            }
+
+            // 获取流水
+            $billInfo = UserMoneyLog::where('source_sn', $consumeRechargeInfo['sn'])->find();
+            if (empty($billInfo['id'])) {
+                self::setError('获取流水失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 删除流水
+            $res = UserMoneyLog::destroy($billInfo['id']);
+            if (!$res) {
+                self::setError('回撤流水失败');
+                Db::rollback();
+                return false;
             }
 
             // 返回用户余额
@@ -183,32 +210,9 @@ class ConsumeRechargeLogic extends BaseLogic
                 'update_time' => time()
             ]);
             if (!$res) {
-                throw new Exception('返还扣除的用户余额失败');
-            }
-
-            // 获取用户余额
-            $userInfo = User::where('id', $consumeRechargeInfo['user_id'])->find();
-            if ($userInfo['user_money'] < 0) {
-                throw new Exception('用户余额不足');
-            }
-
-            // 流水
-            $userAccountData = [
-                'sn' => generate_sn(ConsumeRecharge::class, 'sn'),
-                'user_id' => $consumeRechargeInfo['user_id'],
-                'change_object' => 1,
-                'change_type' => 0,
-                'action' => 1,
-                'change_amount' => $consumeRechargeInfo['pay_price'],
-                'left_amount' => $userInfo['user_money'],
-                'source_sn' => $consumeRechargeInfo['sn'],
-                'remark' => $consumeRechargeInfo['type'] == 1 ? '话费充值失败返还' : '电费充值失败返还',
-                'extra' => 'consume_recharge'
-            ];
-
-            $res = UserAccountLog::create($userAccountData);
-            if (empty($res['id'])) {
-                throw new Exception('流水表失败');
+                self::setError('返还扣除的用户余额失败');
+                Db::rollback();
+                return false;
             }
 
             // 消费充值表
@@ -219,7 +223,9 @@ class ConsumeRechargeLogic extends BaseLogic
 
             $res = ConsumeRecharge::where('id', $id)->update($userAccountData);
             if (empty($res)) {
-                throw new Exception('更改充值表失败');
+                self::setError('更改充值表失败');
+                Db::rollback();
+                return false;
             }
 
             Db::commit();
@@ -227,6 +233,7 @@ class ConsumeRechargeLogic extends BaseLogic
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeRechargeLogic-setFail Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('更改数据失败');
             Db::rollback();
             return false;
         }
@@ -244,9 +251,9 @@ class ConsumeRechargeLogic extends BaseLogic
         try {
             Db::startTrans();
 
-            $consumeRechargeInfo =  ConsumeRecharge::where('id', $id)->find();
+            $consumeRechargeInfo = ConsumeRecharge::where('id', $id)->find();
             if (empty($consumeRechargeInfo)) {
-                throw new Exception('获取不到充值信息ID：' . $id );
+                throw new Exception('获取不到充值信息ID：' . $id);
             }
 
             // 消费充值表

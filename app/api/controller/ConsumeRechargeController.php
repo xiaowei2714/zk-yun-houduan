@@ -408,18 +408,15 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
         if (bccomp($mealInfo['price'], $newParams['recharge_price'], 2) != 0) {
-            return $this->fail('充值信息发生变化，请重新进入话费充值页面');
+            return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
         if (bccomp($mealInfo['real_discount'], $newParams['meal_discount'], 2) != 0) {
-            return $this->fail('充值折扣发生变化，请重新进入话费充值页面');
-        }
-        if (bccomp($mealInfo['discounted_price'], $newParams['pay_price'], 2) != 0) {
-            return $this->fail('充值实付金额发生变化，请重新进入话费充值页面');
+            return $this->fail('充值折扣发生变化，请重新进入充值页面');
         }
 
         // 比较用户余额
         if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
-            return $this->fail('余额不足，请前往充值页面进行充值');
+//            return $this->fail('余额不足，请前往充值页面进行充值');
         }
 
         if ($newParams['type'] == 1 || $newParams['type'] == 3) {
@@ -511,7 +508,7 @@ class ConsumeRechargeController extends BaseApiController
                 $discount = '';
             }
             if ($discount != $newParams['meal_discount']) {
-                return $this->fail('充值折扣发生变化，请重新进入话费充值页面');
+                return $this->fail('充值折扣发生变化，请重新进入充值页面');
             }
 
             $computePrice = $newParams['recharge_price'];
@@ -628,13 +625,10 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
         if (bccomp($mealInfo['price'], $params['money'], 2) != 0) {
-            return $this->fail('充值信息发生变化，请重新进入话费充值页面');
+            return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
         if (bccomp($mealInfo['real_discount'], $params['meal_discount'], 2) != 0) {
-            return $this->fail('充值折扣发生变化，请重新进入话费充值页面');
-        }
-        if (bccomp($mealInfo['discounted_price'], $params['meal_discounted_price'], 2) != 0) {
-            return $this->fail('充值实付金额发生变化，请重新进入话费充值页面');
+            return $this->fail('充值折扣发生变化，请重新进入充值页面');
         }
 
         // 批量数据

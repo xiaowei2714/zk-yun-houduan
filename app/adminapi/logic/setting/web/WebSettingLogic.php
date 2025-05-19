@@ -73,6 +73,19 @@ class WebSettingLogic extends BaseLogic
             'kf_qrcode' => FileService::getFileUrl(ConfigService::get('website', 'kf_qrcode')),
             'kf_mobile' => ConfigService::get('website', 'kf_mobile', ''),
             'kf_time' => ConfigService::get('website', 'kf_time', ''),
+
+            'phone_first_ratio' => ConfigService::get('website', 'phone_first_ratio', ''),
+            'phone_second_ratio' => ConfigService::get('website', 'phone_second_ratio', ''),
+            'phone_three_ratio' => ConfigService::get('website', 'phone_three_ratio', ''),
+            'electricity_first_ratio' => ConfigService::get('website', 'electricity_first_ratio', ''),
+            'electricity_second_ratio' => ConfigService::get('website', 'electricity_second_ratio', ''),
+            'electricity_three_ratio' => ConfigService::get('website', 'electricity_three_ratio', ''),
+            'quickly_first_ratio' => ConfigService::get('website', 'quickly_first_ratio', ''),
+            'quickly_second_ratio' => ConfigService::get('website', 'quickly_second_ratio', ''),
+            'quickly_three_ratio' => ConfigService::get('website', 'quickly_three_ratio', ''),
+            'card_first_ratio' => ConfigService::get('website', 'card_first_ratio', ''),
+            'card_second_ratio' => ConfigService::get('website', 'card_second_ratio', ''),
+            'card_three_ratio' => ConfigService::get('website', 'card_three_ratio', ''),
         ];
     }
 
@@ -132,8 +145,20 @@ class WebSettingLogic extends BaseLogic
         ConfigService::set('website', 'kf_qrcode', $kfQrcode);
         ConfigService::set('website', 'kf_mobile', $params['kf_mobile']);
         ConfigService::set('website', 'kf_time', $params['kf_time']);
-    }
 
+        ConfigService::set('website', 'phone_first_ratio', $params['phone_first_ratio']);
+        ConfigService::set('website', 'phone_second_ratio', $params['phone_second_ratio']);
+        ConfigService::set('website', 'phone_three_ratio', $params['phone_three_ratio']);
+        ConfigService::set('website', 'electricity_first_ratio', $params['electricity_first_ratio']);
+        ConfigService::set('website', 'electricity_second_ratio', $params['electricity_second_ratio']);
+        ConfigService::set('website', 'electricity_three_ratio', $params['electricity_three_ratio']);
+        ConfigService::set('website', 'quickly_first_ratio', $params['quickly_first_ratio']);
+        ConfigService::set('website', 'quickly_second_ratio', $params['quickly_second_ratio']);
+        ConfigService::set('website', 'quickly_three_ratio', $params['quickly_three_ratio']);
+        ConfigService::set('website', 'card_first_ratio', $params['card_first_ratio']);
+        ConfigService::set('website', 'card_second_ratio', $params['card_second_ratio']);
+        ConfigService::set('website', 'card_three_ratio', $params['card_three_ratio']);
+    }
 
     /**
      * @notes 获取版权备案

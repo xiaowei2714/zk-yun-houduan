@@ -19,6 +19,7 @@ use app\common\logic\AccountLogLogic;
 use app\common\logic\BaseLogic;
 use app\common\model\user\User;
 use think\facade\Db;
+use think\Model;
 
 /**
  * 用户逻辑层
@@ -27,6 +28,20 @@ use think\facade\Db;
  */
 class UserLogic extends BaseLogic
 {
+
+    /**
+     * @param int $userId
+     * @return User|array|mixed|Model
+     */
+    public static function info(int $userId)
+    {
+        $field = [
+            'id', 'p_first_user_id', 'p_second_user_id', 'p_three_user_id'
+        ];
+
+        return User::where(['id' => $userId])->field($field)->findOrEmpty();
+    }
+
 
     /**
      * @notes 用户详情

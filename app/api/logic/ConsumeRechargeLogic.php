@@ -6,6 +6,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\ConsumeRecharge;
 use app\common\model\user\User;
 use app\common\model\user\UserAccountLog;
+use app\common\model\UserMoneyLog;
 use think\facade\Db;
 use think\facade\Log;
 use Exception;
@@ -115,7 +116,7 @@ class ConsumeRechargeLogic extends BaseLogic
      * 充值
      *
      * @param array $params
-     * @return false|int[]
+     * @return bool
      */
     public static function recharge(array $params)
     {
@@ -126,6 +127,7 @@ class ConsumeRechargeLogic extends BaseLogic
             $res = User::where('id', $params['user_id'])->dec('user_money', $params['pay_price'])->update([
                 'update_time' => time()
             ]);
+
             if (!$res) {
                 self::setError('扣除账户余额失败');
                 Db::rollback();
@@ -143,20 +145,41 @@ class ConsumeRechargeLogic extends BaseLogic
             $sn = generate_sn(ConsumeRecharge::class, 'sn');
 
             // 流水
-            $userAccountData = [
-                'sn' => generate_sn(ConsumeRecharge::class, 'sn'),
+            $billType = '';
+            $billDesc = '';
+            switch ($params['type']) {
+                case 1:
+                    $billType = 1;
+                    $billDesc = '话费充值扣除';
+                    break;
+
+                case 2:
+                    $billType = 2;
+                    $billDesc = '电费充值扣除';
+                    break;
+
+                case 3:
+                    $billType = 9;
+                    $billDesc = '话费快充充值扣除';
+                    break;
+
+                case 4:
+                    $billType = 10;
+                    $billDesc = '礼品卡充值扣除';
+                    break;
+            }
+
+            $billData = [
                 'user_id' => $params['user_id'],
-                'change_object' => 1,
-                'change_type' => 0,
-                'action' => 2,
-                'change_amount' => $params['pay_price'],
-                'left_amount' => $userInfo['user_money'],
-                'source_sn' => $sn,
-                'remark' => $params['type'] == 1 ? '话费充值扣款' : '电费充值扣款',
-                'extra' => 'consume_recharge'
+                'type' => $billType,
+                'desc' => $billDesc,
+                'change_type' => 2,
+                'change_money' => $params['pay_price'],
+                'changed_money' => $userInfo['user_money'],
+                'source_sn' => $sn
             ];
 
-            $res = UserAccountLog::create($userAccountData);
+            $res = UserMoneyLog::create($billData);
             if (empty($res['id'])) {
                 self::setError('记录流水失败');
                 Db::rollback();
@@ -188,7 +211,9 @@ class ConsumeRechargeLogic extends BaseLogic
 
             $order = ConsumeRecharge::create($consumeRechargeData);
             if (empty($order['id'])) {
-                throw new Exception('充值失败');
+                self::setError('充值失败');
+                Db::rollback();
+                return false;
             }
 
             Db::commit();

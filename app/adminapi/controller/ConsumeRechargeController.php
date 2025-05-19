@@ -4,7 +4,9 @@ namespace app\adminapi\controller;
 
 use app\adminapi\lists\ConsumeRechargeLists;
 use app\adminapi\logic\ConsumeRechargeLogic;
+use app\adminapi\logic\user\UserLogic;
 use app\adminapi\validate\ConsumeRechargeValidate;
+use app\common\service\ConfigService;
 use app\common\service\ConsumeRechargeService;
 use think\facade\Log;
 use think\response\Json;
@@ -169,8 +171,43 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败，当前状态为已失败');
             }
 
-            $res = ConsumeRechargeLogic::setSuccess($info['id']);
+            // 获取用户详情
+            $userInfo = UserLogic::info($info['user_id']);
+            if (empty($userInfo) || empty($userInfo['id'])) {
+                return $this->fail('用户不存在？？？');
+            }
 
+            $userData = [
+                'first_user_id' => $userInfo['p_first_user_id'],
+                'second_user_id' => $userInfo['p_second_user_id'],
+                'three_user_id' => $userInfo['p_three_user_id']
+            ];
+
+            $ratioData = [
+                'first_ratio' => '',
+                'second_ratio' => '',
+                'three_ratio' => ''
+            ];
+
+            if ($info['type'] == 1) {
+                $ratioData['first_ratio'] = ConfigService::get('website', 'phone_first_ratio', '');
+                $ratioData['second_ratio'] = ConfigService::get('website', 'phone_second_ratio', '');
+                $ratioData['three_ratio'] = ConfigService::get('website', 'phone_three_ratio', '');
+            } elseif ($info['type'] == 2) {
+                $ratioData['first_ratio'] = ConfigService::get('website', 'electricity_first_ratio', '');
+                $ratioData['second_ratio'] = ConfigService::get('website', 'electricity_second_ratio', '');
+                $ratioData['three_ratio'] = ConfigService::get('website', 'electricity_three_ratio', '');
+            } elseif ($info['type'] == 3) {
+                $ratioData['first_ratio'] = ConfigService::get('website', 'quickly_first_ratio', '');
+                $ratioData['second_ratio'] = ConfigService::get('website', 'quickly_second_ratio', '');
+                $ratioData['three_ratio'] = ConfigService::get('website', 'quickly_three_ratio', '');
+            } elseif ($info['type'] == 4) {
+                $ratioData['first_ratio'] = ConfigService::get('website', 'card_first_ratio', '');
+                $ratioData['second_ratio'] = ConfigService::get('website', 'card_second_ratio', '');
+                $ratioData['three_ratio'] = ConfigService::get('website', 'card_three_ratio', '');
+            }
+
+            $res = ConsumeRechargeLogic::setSuccess($info['id'], $userData, $ratioData);
             if (!$res) {
                 return $this->fail('设置失败');
             }
@@ -199,7 +236,6 @@ class ConsumeRechargeController extends BaseAdminController
             }
 
             $selectIds = [];
-            $updateIds = [];
             $failMsg = '';
             foreach ($data as $value) {
 
@@ -213,13 +249,9 @@ class ConsumeRechargeController extends BaseAdminController
                     continue;
                 }
 
-                $updateIds[] = $value['id'];
-            }
-
-            if (!empty($updateIds)) {
-                $res = ConsumeRechargeLogic::setBatchSuccess($updateIds);
+                $res = ConsumeRechargeLogic::setSuccess($value['id']);
                 if (!$res) {
-                    return $this->fail('批量设置失败');
+                    $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
                 }
             }
 
@@ -264,7 +296,7 @@ class ConsumeRechargeController extends BaseAdminController
 
             $res = ConsumeRechargeLogic::setFail($info['id']);
             if (!$res) {
-                return $this->fail('设置失败');
+                return $this->fail(ConsumeRechargeLogic::getError());
             }
 
             return $this->success('设置成功', [], 1, 1);
@@ -306,7 +338,7 @@ class ConsumeRechargeController extends BaseAdminController
 
                 $res = ConsumeRechargeLogic::setFail($value['id']);
                 if (!$res) {
-                    $failMsg .= '单号：' . $value['sn'] . ' 设置失败';
+                    $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
                 }
             }
 
