@@ -21,9 +21,13 @@ class ConsumeRechargeValidate extends BaseValidate
         'meal_discounted_price' => 'require',
         'money' => 'require|gt:0|checkMoney',
         'phone' => ['require', 'regex' => '/^1[3456789]\d{9}$/'],
-        'batch_data' => ['require'],
-        'number' => ['require'],
-        'type' => ['require']
+        'batch_data' => 'require',
+        'number' => 'require',
+        'name' => 'require',
+        'area' => 'require',
+        'buy_price' => 'require|gt:0',
+        'pay_price' => 'require|gt:0',
+        'type' => 'require'
     ];
 
     protected $message = [
@@ -37,6 +41,7 @@ class ConsumeRechargeValidate extends BaseValidate
         'phone.regex' => '请正确输入手机号',
         'batch_data' => '请正确输入手机号',
         'number.require' => '户号不能为空',
+        'area' => '地区不能为空',
         'type' => '订单类型不能为空',
     ];
 
@@ -67,7 +72,7 @@ class ConsumeRechargeValidate extends BaseValidate
      */
     public function scenePhoneRecharge()
     {
-        return $this->only(['meal_id', 'meal_discount', 'meal_discounted_price', 'money', 'phone', 'name']);
+        return $this->only(['meal_id', 'meal_discount', 'meal_discounted_price', 'money', 'phone']);
     }
 
     /**
@@ -87,7 +92,7 @@ class ConsumeRechargeValidate extends BaseValidate
      */
     public function sceneElectricityRecharge()
     {
-        return $this->only(['meal_id', 'meal_discount', 'meal_discounted_price', 'money', 'number', 'name']);
+        return $this->only(['meal_id', 'meal_discount', 'meal_discounted_price', 'money', 'number', 'area']);
     }
 
     /**
@@ -98,6 +103,16 @@ class ConsumeRechargeValidate extends BaseValidate
     public function sceneBatchElectricityRecharge()
     {
         return $this->only(['meal_id', 'meal_discount', 'meal_discounted_price', 'money', 'batch_data']);
+    }
+
+    /**
+     * 礼品卡充值验证
+     *
+     * @return ConsumeRechargeValidate
+     */
+    public function sceneCardRecharge()
+    {
+        return $this->only(['name', 'buy_price', 'pay_price']);
     }
 
     /**

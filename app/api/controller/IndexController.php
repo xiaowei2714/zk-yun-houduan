@@ -872,6 +872,35 @@ class IndexController extends BaseApiController
     }
 
     /**
+     * 获取电费套餐列表
+     *
+     * @return Json
+     */
+    public function getMealElectricityList(): Json
+    {
+        $type = 2;
+        $mealList = (new UserMealService())->getMealList($type, $this->userId);
+
+        $newData = [];
+        foreach ($mealList as $value) {
+            $newData[] = [
+                'id' => $value['id'],
+                'price' => $value['price'],
+                'name' => $value['name'],
+                'discount' => $value['discount'],
+                'discountedPrice' => $value['discounted_price'],
+                'price2' => $value['price2'],
+                'type' => $value['type'],
+            ];
+        }
+
+        return $this->success('',[
+            'list' => $newData,
+            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+        ]);
+    }
+
+    /**
      * 获取快速充值套餐列表
      *
      * @return Json
@@ -901,31 +930,20 @@ class IndexController extends BaseApiController
     }
 
     /**
-     * 获取电费套餐列表
+     * 获取礼品卡配置
      *
      * @return Json
      */
-    public function getMealElectricityList(): Json
+    public function cardConf(): Json
     {
-        $type = 2;
-        $mealList = (new UserMealService())->getMealList($type, $this->userId);
-
-        $newData = [];
-        foreach ($mealList as $value) {
-            $newData[] = [
-                'id' => $value['id'],
-                'price' => $value['price'],
-                'name' => $value['name'],
-                'discount' => $value['discount'],
-                'discountedPrice' => $value['discounted_price'],
-                'price2' => $value['price2'],
-                'type' => $value['type'],
-            ];
+        $discount = ConfigService::get('website', 'card_discount', '');
+        if (empty($discount) || $discount >= 10 || $discount <= 0) {
+            $discount = '';
         }
 
         return $this->success('',[
-            'list' => $newData,
-            'reference_rate' => ConfigService::get('website', 'reference_rate', '')
+            'discount' => $discount,
+            'rate' => ConfigService::get('website', 'reference_rate', '')
         ]);
     }
 

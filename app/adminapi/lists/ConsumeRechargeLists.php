@@ -111,6 +111,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
                 'balances_price' => $item['balances_price'],
                 'status' => $item['status'],
                 'time' => $item['create_time'],
+                'type' => $item['type'],
                 'ctime' => $cTime,
                 'sa' => false
             ];
@@ -153,7 +154,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
 
         if (isset($params['account']) && $params['account'] !== '' && $params['account'] !== null) {
             $newData[] = [
-                $pre . 'account', 'like', '%' . $params['account'] . '%'
+                $pre . 'account|name_area', 'like', '%' . $params['account'] . '%'
             ];
         }
 

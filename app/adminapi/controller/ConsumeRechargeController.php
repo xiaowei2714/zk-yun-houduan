@@ -363,6 +363,10 @@ class ConsumeRechargeController extends BaseAdminController
                 }
 
                 $price = $requestData['real_balance'];
+            } elseif ($info['type'] == 4) {
+                return $this->fail('礼品卡不支持更新操作');
+            } else {
+                return $this->fail('不支持的类型');
             }
 
             $res = ConsumeRechargeLogic::setBalance($info['id'], $price);
@@ -424,6 +428,12 @@ class ConsumeRechargeController extends BaseAdminController
                     }
 
                     $price = $requestData['real_balance'];
+                } elseif ($value['type'] == 4) {
+                    $failMsg .= '单号：' . $value['sn'] . ' 礼品卡不支持更新操作';
+                    continue;
+                } else {
+                    $failMsg .= '单号：' . $value['sn'] . ' 不支持的类型';
+                    continue;
                 }
 
                 $res = ConsumeRechargeLogic::setBalance($value['id'], $price);

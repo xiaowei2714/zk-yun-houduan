@@ -59,7 +59,7 @@ class ConsumeRechargeLogic extends BaseLogic
             }
 
             return $obj->order('id desc')
-                ->limit(15)
+                ->limit(30)
                 ->select()
                 ->toArray();
 
@@ -123,7 +123,7 @@ class ConsumeRechargeLogic extends BaseLogic
             Db::startTrans();
 
             // 扣除用户余额
-            $res = User::where('id', $params['user_id'])->dec('user_money', $params['meal_discounted_price'])->update([
+            $res = User::where('id', $params['user_id'])->dec('user_money', $params['pay_price'])->update([
                 'update_time' => time()
             ]);
             if (!$res) {
@@ -149,7 +149,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 'change_object' => 1,
                 'change_type' => 0,
                 'action' => 2,
-                'change_amount' => $params['meal_discounted_price'],
+                'change_amount' => $params['pay_price'],
                 'left_amount' => $userInfo['user_money'],
                 'source_sn' => $sn,
                 'remark' => $params['type'] == 1 ? '话费充值扣款' : '电费充值扣款',
@@ -169,15 +169,22 @@ class ConsumeRechargeLogic extends BaseLogic
                 'user_id' => $params['user_id'],
                 'account' => $params['account'],
                 'name_area' => $params['name_area'],
-                'recharge_price' => $params['money'],
+                'recharge_price' => $params['recharge_price'],
                 'status' => 1,
-                'meal_id' => $params['meal_id'],
                 'meal_discount' => $params['meal_discount'],
-                'pay_price' => $params['meal_discounted_price'],
-                'type' => $params['type'],
-                'recharge_up_price' => $params['recharge_up_price'] ?? 0,
-                'account_type' => $params['account_type'] ?? ''
+                'pay_price' => $params['pay_price'],
+                'type' => $params['type']
             ];
+
+            if (isset($params['meal_id'])) {
+                $consumeRechargeData['meal_id'] = $params['recharge_up_price'];
+            }
+            if (isset($params['recharge_up_price'])) {
+                $consumeRechargeData['recharge_up_price'] = $params['recharge_up_price'];
+            }
+            if (isset($params['account_type'])) {
+                $consumeRechargeData['account_type'] = $params['account_type'];
+            }
 
             $order = ConsumeRecharge::create($consumeRechargeData);
             if (empty($order['id'])) {

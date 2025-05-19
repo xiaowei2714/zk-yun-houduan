@@ -37,9 +37,7 @@ class SetMealLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function setSearch(): array
     {
-        return [
-            
-        ];
+        return [];
     }
 
 
@@ -54,7 +52,14 @@ class SetMealLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        $list = SetMeal::where($this->searchWhere)
+        $where = $this->searchWhere;
+        if (isset($this->params['type']) && $this->params['type'] != 0) {
+            $where[] = [
+                'type', '=', $this->params['type']
+            ];
+        }
+
+        $list = SetMeal::where($where)
             ->field(['id', 'name', 'type', 'show_type', 'price', 'discount', 'operator', 'forbid_buy_city', 'sort', 'day_astrict_num', 'meanwhile_order_num',
                 'user_required_info', 'merchant_required_info', 'allow_buy_nums', 'forbid_buy_nums', 'status', 'desc'])
             ->limit($this->limitOffset, $this->limitLength)

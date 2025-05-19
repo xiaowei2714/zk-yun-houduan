@@ -64,6 +64,7 @@ class WebSettingLogic extends BaseLogic
             'reference_rate' => ConfigService::get('website', 'reference_rate', ''),
             'query_hf' => ConfigService::get('website', 'query_hf', ''),
             'query_df' => ConfigService::get('website', 'query_df', ''),
+            'card_discount' => ConfigService::get('website', 'card_discount', ''),
             'share_tips' => ConfigService::get('website', 'share_tips', ''),
             'share_rules' => ConfigService::get('website', 'share_rules', ''),
             'open_substation_tips' => ConfigService::get('website', 'open_substation_tips', ''),
@@ -122,6 +123,7 @@ class WebSettingLogic extends BaseLogic
         ConfigService::set('website', 'reference_rate', $params['reference_rate']);
         ConfigService::set('website', 'query_hf', $params['query_hf']);
         ConfigService::set('website', 'query_df', $params['query_df']);
+        ConfigService::set('website', 'card_discount', $params['card_discount']);
         ConfigService::set('website', 'share_tips', $params['share_tips']);
         ConfigService::set('website', 'share_rules', $params['share_rules']);
         ConfigService::set('website', 'open_substation_tips', $params['open_substation_tips']);

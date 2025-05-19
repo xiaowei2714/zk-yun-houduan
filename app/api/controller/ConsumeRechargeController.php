@@ -8,6 +8,7 @@ use app\api\logic\UserLogic;
 use app\api\logic\WebSettingLogic;
 use app\api\service\UserMealService;
 use app\api\validate\ConsumeRechargeValidate;
+use app\common\service\ConfigService;
 use app\common\service\ConsumeRechargeService;
 use think\facade\Config;
 use think\facade\Log;
@@ -46,6 +47,10 @@ class ConsumeRechargeController extends BaseApiController
 
                 case 'quickly':
                     $type = 3;
+                    break;
+
+                case 'card':
+                    $type = 4;
                     break;
 
                 default:
@@ -95,6 +100,7 @@ class ConsumeRechargeController extends BaseApiController
             $newData = [];
             foreach ($list as $value) {
 
+                $accountShow = $value['account'];
                 $accountNameShow = '';
                 if ($value['type'] == 1 || $value['type'] == 3) {
                     switch ($value['account_type']) {
@@ -116,17 +122,19 @@ class ConsumeRechargeController extends BaseApiController
                     }
                 } elseif ($value['type'] == 2) {
                     $accountNameShow = $areaData[$value['name_area']] ?? '';
+                } elseif ($value['type'] == 4) {
+                    $accountShow = $value['name_area'];
                 }
 
                 $tmpData = [
                     'id' => $value['id'],
                     'sn' => $value['sn'],
-                    'account' => $value['account'],
+                    'account' => $accountShow,
                     'account_name' => $accountNameShow,
                     'price' => $value['recharge_price'],
-                    'up_price' => $value['recharge_up_price'],
-                    'down_price' => $value['recharge_down_price'] ?: $value['recharge_up_price'],
-                    'balances_price' => $value['balances_price'] ?: 0,
+                    'up_price' => $value['recharge_up_price'] ?? '0.00',
+                    'down_price' => $value['recharge_down_price'] ?? '0.00',
+                    'balances_price' => $value['balances_price'] ?? '0.00',
                     'pay_price' => $value['pay_price'],
                     'status' => $value['status'],
                     'type' => $value['type'],
@@ -233,6 +241,9 @@ class ConsumeRechargeController extends BaseApiController
                 'ki' => 0,
                 'ks' => 0,
                 'kf' => 0,
+                'ci' => 0,
+                'cs' => 0,
+                'cf' => 0,
             ];
 
             foreach ($data as $value) {
@@ -259,6 +270,14 @@ class ConsumeRechargeController extends BaseApiController
                         $newData['ks'] = $value['cou'];
                     } elseif ($value['status'] == 4) {
                         $newData['kf'] = $value['cou'];
+                    }
+                } elseif ($value['type'] == 4) {
+                    if ($value['status'] == 2) {
+                        $newData['ci'] = $value['cou'];
+                    } elseif ($value['status'] == 3) {
+                        $newData['cs'] = $value['cou'];
+                    } elseif ($value['status'] == 4) {
+                        $newData['cf'] = $value['cou'];
                     }
                 }
             }
@@ -293,27 +312,6 @@ class ConsumeRechargeController extends BaseApiController
     }
 
     /**
-     * 话费快充
-     *
-     * @return Json
-     */
-    public function quicklyRecharge(): Json
-    {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('phoneRecharge', [
-            'user_id' => $this->userId,
-            'terminal' => $this->userInfo['terminal'],
-            'type' => 3
-        ]);
-
-        try {
-            return $this->commonRecharge($params);
-        } catch (Exception $e) {
-            Log::record('Exception: api-ConsumeRechargeController-quicklyRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
-            return $this->fail('系统错误');
-        }
-    }
-
-    /**
      * 电费充值
      *
      * @return Json
@@ -335,17 +333,47 @@ class ConsumeRechargeController extends BaseApiController
     }
 
     /**
+     * 话费快充
+     *
+     * @return Json
+     */
+    public function quicklyRecharge(): Json
+    {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('phoneRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 3
+        ]);
+
+        try {
+            return $this->commonRecharge($params);
+        } catch (Exception $e) {
+            Log::record('Exception: api-ConsumeRechargeController-quicklyRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
      * @param $params
      * @return Json
      * @throws Exception
      */
     private function commonRecharge($params): Json
     {
+        $newParams = [
+            'user_id' => $params['user_id'],
+            'account' => '',
+            'account_type' => null,
+            'name_area' => '',
+            'recharge_price' => $params['money'],
+            'meal_id' => $params['meal_id'],
+            'meal_discount' => $params['meal_discount'] ?? '',
+            'pay_price' => $params['meal_discounted_price'],
+            'type' => $params['type']
+        ];
 
         // 验证数据
-        $params['account'] = '';
-        $params['name_area'] = '';
-        if ($params['type'] == 1 || $params['type'] == 3) {
+        if ($newParams['type'] == 1 || $newParams['type'] == 3) {
             if (!isset($params['name'])) {
                 $params['name'] = '';
             }
@@ -353,26 +381,16 @@ class ConsumeRechargeController extends BaseApiController
                 return $this->fail('机主姓名不能超过30个字符');
             }
 
-            $params['account'] = $params['phone'];
-            $params['name_area'] = $params['name'];
-            unset($params['phone']);
-            unset($params['name']);
+            $newParams['account'] = $params['phone'];
+            $newParams['name_area'] = $params['name'];
 
-        } elseif ($params['type'] == 2) {
+        } elseif ($newParams['type'] == 2) {
             if (strlen($params['number']) > 30) {
                 return $this->fail('户号不能超过30个字符');
             }
-            if (!isset($params['area'])) {
-                $params['area'] = '';
-            }
-            if (mb_strlen($params['area']) > 30) {
-                return $this->fail('地区不能超过30个字符');
-            }
 
-            $params['account'] = $params['number'];
-            $params['name_area'] = $params['area'];
-            unset($params['number']);
-            unset($params['area']);
+            $newParams['account'] = $params['number'];
+            $newParams['name_area'] = $params['area'];
         }
 
         // 验证用户
@@ -385,29 +403,29 @@ class ConsumeRechargeController extends BaseApiController
         }
 
         // 获取优惠配置
-        $mealInfo = (new UserMealService())->getMealInfo($params['meal_id'], $this->userId);
-        if ($mealInfo['type'] != $params['type']) {
+        $mealInfo = (new UserMealService())->getMealInfo($newParams['meal_id'], $this->userId);
+        if ($mealInfo['type'] != $newParams['type']) {
             return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
-        if (bccomp($mealInfo['price'], $params['money'], 2) != 0) {
+        if (bccomp($mealInfo['price'], $newParams['recharge_price'], 2) != 0) {
             return $this->fail('充值信息发生变化，请重新进入话费充值页面');
         }
-        if (bccomp($mealInfo['real_discount'], $params['meal_discount'], 2) != 0) {
+        if (bccomp($mealInfo['real_discount'], $newParams['meal_discount'], 2) != 0) {
             return $this->fail('充值折扣发生变化，请重新进入话费充值页面');
         }
-        if (bccomp($mealInfo['discounted_price'], $params['meal_discounted_price'], 2) != 0) {
+        if (bccomp($mealInfo['discounted_price'], $newParams['pay_price'], 2) != 0) {
             return $this->fail('充值实付金额发生变化，请重新进入话费充值页面');
         }
 
         // 比较用户余额
-        if (bccomp($userInfo['user_money'], $params['meal_discounted_price'], 2) < 0) {
+        if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
             return $this->fail('余额不足，请前往充值页面进行充值');
         }
 
-        if ($params['type'] == 1 || $params['type'] == 3) {
+        if ($newParams['type'] == 1 || $newParams['type'] == 3) {
 
             // 获取实时话费余额
-            $requestData = (new ConsumeRechargeService())->getPhoneBalance($params['account']);
+            $requestData = (new ConsumeRechargeService())->getPhoneBalance($newParams['account']);
             if (empty($requestData)) {
                 return $this->fail('暂不支持的手机号充值');
             }
@@ -415,13 +433,13 @@ class ConsumeRechargeController extends BaseApiController
                 return $this->fail(!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的手机号充值');
             }
 
-            $params['recharge_up_price'] = $requestData['cur_fee'];
-            $params['account_type'] = $requestData['isp_id'];
+            $newParams['recharge_up_price'] = $requestData['cur_fee'];
+            $newParams['account_type'] = $requestData['isp_id'];
 
-        } elseif ($params['type'] == 2) {
+        } elseif ($newParams['type'] == 2) {
 
             // 获取实时电费余额
-            $requestData = (new ConsumeRechargeService())->getElectricityBalance($params['account'], ($params['name_area'] + 1));
+            $requestData = (new ConsumeRechargeService())->getElectricityBalance($newParams['account'], ($newParams['name_area'] + 1));
             if (empty($requestData)) {
                 return $this->fail('暂不支持的卡号充值');
             }
@@ -429,11 +447,10 @@ class ConsumeRechargeController extends BaseApiController
                 return $this->fail(!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的卡号充值');
             }
 
-            $params['recharge_up_price'] = $requestData['real_balance'];
-            $params['account_type'] = '';
+            $newParams['recharge_up_price'] = $requestData['real_balance'];
         }
 
-        $result = ConsumeRechargeLogic::recharge($params);
+        $result = ConsumeRechargeLogic::recharge($newParams);
         if (!$result) {
             return $this->fail(ConsumeRechargeLogic::getError());
         }
@@ -441,6 +458,88 @@ class ConsumeRechargeController extends BaseApiController
         return $this->data([
             'msg' => '充值成功'
         ]);
+    }
+
+    /**
+     * 礼品卡充值
+     *
+     * @return Json
+     * @throws Exception
+     */
+    public function cardRecharge(): Json
+    {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('cardRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 4
+        ]);
+
+        try {
+
+            // 验证数据
+            if (!isset($params['name'])) {
+                $params['name'] = '';
+            }
+            if (mb_strlen($params['name']) > 30) {
+                return $this->fail('卡名不能超过30个字符');
+            }
+
+            $newParams = [
+                'user_id' => $params['user_id'],
+                'account' => '',
+                'name_area' => $params['name'],
+                'recharge_price' => $params['buy_price'],
+                'meal_discount' => $params['discount'] ?? '',
+                'pay_price' => $params['pay_price'],
+                'type' => $params['type']
+            ];
+
+            unset($params);
+
+            // 验证用户
+            $userInfo = UserLogic::info($this->userId);
+            if (empty($userInfo)) {
+                return $this->fail('当前用户不可用，请联系客服');
+            }
+            if ($userInfo['is_disable'] == 1) {
+                return $this->fail('当前用户账号异常，请联系客服');
+            }
+
+            // 获取优惠配置
+            $discount = ConfigService::get('website', 'card_discount', '');
+            if (empty($discount) || $discount >= 10 || $discount <= 0) {
+                $discount = '';
+            }
+            if ($discount != $newParams['meal_discount']) {
+                return $this->fail('充值折扣发生变化，请重新进入话费充值页面');
+            }
+
+            $computePrice = $newParams['recharge_price'];
+            if ($discount !== '') {
+                $computePrice = number_format(bcmul($newParams['recharge_price'], bcdiv($discount, 10, 3), 3), 2);
+            }
+            if (bccomp($computePrice, $newParams['pay_price'], 2) != 0) {
+                return $this->fail('充值实付金额发生变化，请联系客服人员');
+            }
+
+            // 比较用户余额
+            if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
+                return $this->fail('余额不足，请前往充值页面进行充值');
+            }
+
+            $result = ConsumeRechargeLogic::recharge($newParams);
+            if (!$result) {
+                return $this->fail(ConsumeRechargeLogic::getError());
+            }
+
+            return $this->data([
+                'msg' => '充值成功'
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-ConsumeRechargeController-cardRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 
     /**
@@ -465,28 +564,6 @@ class ConsumeRechargeController extends BaseApiController
     }
 
     /**
-     * 批量话费充值
-     *
-     * @return Json
-     */
-    public function batchQuicklyRecharge(): Json
-    {
-        $params = (new ConsumeRechargeValidate())->post()->goCheck('batchPhoneRecharge', [
-            'user_id' => $this->userId,
-            'terminal' => $this->userInfo['terminal'],
-            'type' => 3
-        ]);
-
-        try {
-            return $this->commonBatchRecharge($params);
-        } catch (Exception $e) {
-            Log::record('Exception: api-ConsumeRechargeController-batchQuicklyRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
-            return $this->fail('系统错误');
-        }
-    }
-
-
-    /**
      * 批量电费充值
      *
      * @return Json
@@ -503,6 +580,27 @@ class ConsumeRechargeController extends BaseApiController
             return $this->commonBatchRecharge($params);
         } catch (Exception $e) {
             Log::record('Exception: api-ConsumeRechargeController-batchElectricityRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 批量话费快充
+     *
+     * @return Json
+     */
+    public function batchQuicklyRecharge(): Json
+    {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('batchPhoneRecharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+            'type' => 3
+        ]);
+
+        try {
+            return $this->commonBatchRecharge($params);
+        } catch (Exception $e) {
+            Log::record('Exception: api-ConsumeRechargeController-batchQuicklyRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -543,7 +641,7 @@ class ConsumeRechargeController extends BaseApiController
         $batchData = explode(PHP_EOL, $params['batch_data']);
 
         // 比较用户余额
-        $total = bcmul($params['meal_discounted_price'], count($batchData), 2);
+        $total = bcmul($mealInfo['discounted_price'], count($batchData), 2);
         if (bccomp($userInfo['user_money'], $total, 2) < 0) {
             return $this->fail('余额不足，请前往充值页面进行充值');
         }
@@ -560,13 +658,13 @@ class ConsumeRechargeController extends BaseApiController
 
             $tmpParams = [
                 'user_id' => $params['user_id'],
-                'money' => $params['money'],
                 'account' => $tmpData[0],
                 'account_type' => null,
                 'name_area' => '',
+                'recharge_price' => $params['money'],
                 'meal_id' => $params['meal_id'],
                 'meal_discount' => $params['meal_discount'],
-                'meal_discounted_price' => $mealInfo['discounted_price'],
+                'pay_price' => $mealInfo['discounted_price'],
                 'type' => $params['type'],
                 'recharge_up_price' => 0
             ];
