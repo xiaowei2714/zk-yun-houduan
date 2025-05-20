@@ -89,7 +89,7 @@ class UserController extends BaseAdminController
             return $this->fail('用户不存在');
         }
         // 获取套餐列表
-        $meal_list = SetMeal::order('sort','desc')->field('id,name,type,discount')->select()->toArray();
+        $meal_list = SetMeal::order('type','asc')->order('sort','desc')->field('id,name,type,discount')->select()->toArray();
         foreach ($meal_list as &$item) {
             $userMeal = UserMealDiscount::where(['user_id' => $userId, 'meal_id' => $item['id']])->find();
             if ($userMeal) {

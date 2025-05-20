@@ -91,7 +91,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 ->toArray();
 
         } catch (Exception $e) {
-            Log::record('Exception: SqlList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: Sql-ConsumeRechargeLogic-groupCount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return false;
         }
     }

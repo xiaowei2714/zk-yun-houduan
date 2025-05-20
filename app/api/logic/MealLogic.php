@@ -4,7 +4,7 @@ namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
 use app\common\model\SetMeal;
-use think\Model;
+use Exception;
 
 /**
  * 充值金额
@@ -15,10 +15,27 @@ use think\Model;
 class MealLogic extends BaseLogic
 {
     /**
+     * @return array
+     */
+    public function getMealList(): array
+    {
+        try {
+            return SetMeal::field('id,name,type,discount,price')
+                ->order('type','asc')
+                ->order('sort','desc')
+                ->select()
+                ->toArray();
+        } catch (Exception $e) {
+            self::setError($e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * @param $type
      * @return array
      */
-    public function getMealList($type): array
+    public function getMealListByType($type): array
     {
         try {
             return SetMeal::where(['type' => $type])
@@ -26,7 +43,7 @@ class MealLogic extends BaseLogic
                 ->order('sort','desc')
                 ->select()
                 ->toArray();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             self::setError($e->getMessage());
             return [];
         }

@@ -15,7 +15,7 @@ class UserMealService
      */
     public function getMealList($type, $userId, $rate): array
     {
-        $mealList = (new MealLogic())->getMealList($type);
+        $mealList = (new MealLogic())->getMealListByType($type);
 
         $userMeal = new UserMealLogic();
 

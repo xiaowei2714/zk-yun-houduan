@@ -158,9 +158,12 @@ class ConsumeRechargeLogic extends BaseLogic
                     $givePrice = number_format($givePrice, 2);
 
                     // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)->inc('user_money', $givePrice)->update([
-                        'update_time' => time()
-                    ]);
+                    $res = User::where('id', $tmpUserId)
+                        ->inc('user_money', $givePrice)
+                        ->inc('total_award_price', $givePrice)
+                        ->update([
+                            'update_time' => time()
+                        ]);
 
                     if (!$res) {
                         self::setError('增加返佣第一人账户余额失败，ID：' . $tmpUserId);
@@ -215,9 +218,12 @@ class ConsumeRechargeLogic extends BaseLogic
                     $givePrice = number_format($givePrice, 2);
 
                     // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)->inc('user_money', $givePrice)->update([
-                        'update_time' => time()
-                    ]);
+                    $res = User::where('id', $tmpUserId)
+                        ->inc('user_money', $givePrice)
+                        ->inc('total_award_price', $givePrice)
+                        ->update([
+                            'update_time' => time()
+                        ]);
 
                     if (!$res) {
                         self::setError('增加返佣第二人账户余额失败，ID：' . $tmpUserId);
@@ -272,9 +278,12 @@ class ConsumeRechargeLogic extends BaseLogic
                     $givePrice = number_format($givePrice, 2);
 
                     // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)->inc('user_money', $givePrice)->update([
-                        'update_time' => time()
-                    ]);
+                    $res = User::where('id', $tmpUserId)
+                        ->inc('user_money', $givePrice)
+                        ->inc('total_award_price', $givePrice)
+                        ->update([
+                            'update_time' => time()
+                        ]);
 
                     if (!$res) {
                         self::setError('增加返佣第三人账户余额失败，ID：' . $tmpUserId);

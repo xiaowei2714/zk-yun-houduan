@@ -723,67 +723,6 @@ class IndexController extends BaseApiController
     }
 
     /**
-     * 获取下级列表
-     * Author: Jarshs
-     * 2025/4/30
-     * @return Json
-     * @throws DataNotFoundException
-     * @throws DbException
-     * @throws ModelNotFoundException
-     */
-    public function getFriendList()
-    {
-        $type = $this->request->get('type');
-//        if (!$type) {
-//            return $this->fail('参数缺失');
-//        }
-        // 获取今日收益
-        $startTime = strtotime(date('Y-m-d 00:00:00'));
-        $endTime = strtotime(date('Y-m-d 23:59:59'));
-
-        $todayTotal = 0;
-        $total = 0;
-
-        $where = [];
-        if ($type == 0) {
-            $where[] = ['p_first_user_id','=',$this->userId];
-        } else if ($type == 1) {
-            $where[] = ['p_second_user_id','=',$this->userId];
-        } else if ($type == 2) {
-            $where[] = ['p_three_user_id','=',$this->userId];
-        }
-
-        $list = User::where($where)
-            ->field('id,avatar,nickname,create_time')
-            ->select()
-            ->toArray();
-        $ids = User::where($where)
-            ->column('id');
-
-        $idString = implode(',', $ids);
-        foreach ($list as &$v) {
-            $xjTodayTotal = UserMoneyLog::where(['change_type' => 1, 'type' => 3])
-                ->where('id', 'in', $idString)
-                ->whereBetween('create_time', [$startTime, $endTime])
-                ->sum('change_money');
-            $xjTotal = UserMoneyLog::where(['change_type' => 1, 'type' => 3])
-                ->where('id', 'in', $idString)
-                ->sum('change_money');
-            $v['xjTodayTotal'] = $xjTodayTotal;
-            $v['xjTotal'] = $xjTotal;
-            $v['avatar'] = FileService::getFileUrl($v['avatar']);
-            $todayTotal += $xjTodayTotal;
-            $total += $xjTotal;
-        }
-
-        return $this->success('',[
-            'list' => $list,
-            'todayTotal' => $todayTotal,
-            'total' => $total
-        ]);
-    }
-
-    /**
      * 获取推广页数据
      * Author: Jarshs
      * 2025/4/30
@@ -1389,7 +1328,7 @@ class IndexController extends BaseApiController
         Db::startTrans();
         try {
             if (!self::verifyCode($postData['email'], $postData['code'])) {
-                throw new \Exception('验证码错误或已过期');
+//                throw new \Exception('验证码错误或已过期');
             }
 
             $writeOffUser = WriteOffUser::where('email',$postData['email'])->find();

@@ -1,19 +1,6 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
 
 namespace app\api\logic;
-
 
 use app\common\{enum\notice\NoticeEnum,
     enum\user\UserTerminalEnum,
@@ -23,8 +10,12 @@ use app\common\{enum\notice\NoticeEnum,
     model\user\UserAuth,
     service\FileService,
     service\sms\SmsDriver,
-    service\wechat\WeChatMnpService};
+    service\wechat\WeChatMnpService
+};
 use think\facade\Config;
+use think\facade\Log;
+use think\Model;
+use Exception;
 
 /**
  * 会员逻辑层
@@ -80,6 +71,58 @@ class UserLogic extends BaseLogic
         return $user->toArray();
     }
 
+    /**
+     * @param int $userId
+     * @return User|array|mixed|Model
+     */
+    public static function getPreviousUserId(int $userId): mixed
+    {
+        try {
+
+            return User::where(['id' => $userId])
+                ->field('id,p_first_user_id')
+                ->findOrEmpty();
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-UserLogic-getPreviousUserId Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @param int $userId
+     * @param $type
+     * @return array|false
+     */
+    public static function getDataByPUserId(int $userId, $type): bool|array
+    {
+        try {
+
+            $where = [];
+            if ($type == 0) {
+                $where[] = ['p_first_user_id', '=', $userId];
+            } else if ($type == 1) {
+                $where[] = ['p_second_user_id', '=', $userId];
+            } else if ($type == 2) {
+                $where[] = ['p_three_user_id', '=', $userId];
+            } else {
+                self::setError('类型异常');
+                return false;
+            }
+
+            return User::where($where)
+                ->field(['id,avatar,nickname'])
+                ->alias('u')
+                ->select()
+                ->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-setRecharging Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * @notes 设置用户信息
@@ -117,7 +160,7 @@ class UserLogic extends BaseLogic
     public static function hasWechatAuth(int $userId)
     {
         //是否有微信授权登录
-        $terminal = [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA,UserTerminalEnum::PC];
+        $terminal = [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA, UserTerminalEnum::PC];
         $auth = UserAuth::where(['user_id' => $userId])
             ->whereIn('terminal', $terminal)
             ->findOrEmpty();

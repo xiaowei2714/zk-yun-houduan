@@ -27,10 +27,19 @@ class UserValidate extends BaseValidate
 
     protected $rule = [
         'code' => 'require',
+        'id' => 'require|number',
+        'value' => 'require',
+        'user_id' => 'require',
+        'list' => 'require',
     ];
 
     protected $message = [
         'code.require' => '参数缺失',
+        'id.require' => '参数缺失',
+        'id.number' => '参数格式不正确',
+        'value.require' => '参数缺失',
+        'user_id.require' => '参数缺失',
+        'list.require' => '参数缺失',
     ];
 
 
@@ -57,5 +66,13 @@ class UserValidate extends BaseValidate
         return $this->only(['mobile', 'code']);
     }
 
-
+    /**
+     * 设置好友折扣
+     *
+     * @return UserValidate
+     */
+    public function sceneSetFriendDiscount(): UserValidate
+    {
+        return $this->only(['user_id', 'list']);
+    }
 }

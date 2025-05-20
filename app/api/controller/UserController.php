@@ -14,10 +14,24 @@
 namespace app\api\controller;
 
 
+use app\api\logic\MealLogic;
 use app\api\logic\UserLogic;
+use app\api\logic\UserMealLogic;
+use app\api\logic\UserMoneyLogLogic;
 use app\api\validate\PasswordValidate;
 use app\api\validate\SetUserInfoValidate;
 use app\api\validate\UserValidate;
+use app\common\model\SetMeal;
+use app\common\model\user\User;
+use app\common\model\UserMealDiscount;
+use app\common\model\UserMoneyLog;
+use app\common\service\FileService;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
+use think\facade\Log;
+use think\response\Json;
+use Exception;
 
 /**
  * 用户控制器
@@ -138,10 +152,283 @@ class UserController extends BaseApiController
         $params = (new UserValidate())->post()->goCheck('bindMobile');
         $params['user_id'] = $this->userId;
         $result = UserLogic::bindMobile($params);
-        if($result) {
+        if ($result) {
             return $this->success('绑定成功', [], 1, 1);
         }
         return $this->fail(UserLogic::getError());
     }
 
+    /**
+     * 获取好友列表
+     *
+     * @return Json
+     */
+//    public function getFriendList(): Json
+//    {
+//        $type = $this->request->get('type');
+//
+//        // 获取今日收益
+//        $startTime = strtotime(date('Y-m-d 00:00:00'));
+//        $endTime = strtotime(date('Y-m-d 23:59:59'));
+//
+//        $todayTotal = 0;
+//        $total = 0;
+//
+//        $where = [];
+//        if ($type == 0) {
+//            $where[] = ['p_first_user_id', '=', $this->userId];
+//        } else if ($type == 1) {
+//            $where[] = ['p_second_user_id', '=', $this->userId];
+//        } else if ($type == 2) {
+//            $where[] = ['p_three_user_id', '=', $this->userId];
+//        } else {
+//            return $this->fail('参数异常');
+//        }
+//
+//        $list = User::where($where)
+//            ->field('id,avatar,nickname,create_time')
+//            ->select()
+//            ->toArray();
+//        $ids = User::where($where)
+//            ->column('id');
+//
+//        $idString = implode(',', $ids);
+//        foreach ($list as &$v) {
+//            $xjTodayTotal = UserMoneyLog::where(['change_type' => 1, 'type' => 3])
+//                ->where('id', 'in', $idString)
+//                ->whereBetween('create_time', [$startTime, $endTime])
+//                ->sum('change_money');
+//            $xjTotal = UserMoneyLog::where(['change_type' => 1, 'type' => 3])
+//                ->where('id', 'in', $idString)
+//                ->sum('change_money');
+//            $v['xjTodayTotal'] = $xjTodayTotal;
+//            $v['xjTotal'] = $xjTotal;
+//            $v['avatar'] = FileService::getFileUrl($v['avatar']);
+//            $todayTotal += $xjTodayTotal;
+//            $total += $xjTotal;
+//        }
+//
+//        return $this->success('', [
+//            'list' => $list,
+//            'todayTotal' => $todayTotal,
+//            'total' => $total
+//        ]);
+//    }
+
+    /**
+     * 获取好友列表
+     *
+     * @return Json
+     */
+    public function getFriendList(): Json
+    {
+        try {
+
+            $type = $this->request->get('type');
+
+            $data = UserLogic::getDataByPUserId($this->userId, $type);
+            if ($data === false) {
+                return $this->fail(UserLogic::getError());
+            }
+
+            $userIds = array_column($data, 'id');
+
+            // 获取今日收益
+            $startTime = strtotime(date('Y-m-d 00:00:00'));
+            $endTime = strtotime(date('Y-m-d 23:59:59'));
+
+            // 获取用户返佣
+            $todayGroupSum = UserMoneyLogLogic::groupSum($userIds, $startTime, $endTime);
+            $todayGroupSum = array_column($todayGroupSum, 'change_money', 'user_id');
+            $totalGroupSum = UserMoneyLogLogic::groupSum($userIds);
+            $totalGroupSum = array_column($totalGroupSum, 'change_money', 'user_id');
+
+            $todayTotal = 0;
+            $total = 0;
+            $newData = [];
+            foreach ($data as $value) {
+
+                $tmpTodayTotal = $todayGroupSum[$value['id']] ?? '0.00';
+                $tmpTotal = $totalGroupSum[$value['id']] ?? '0.00';
+
+                $newData[] = [
+                    'id' => $value['id'],
+                    'nickname' => $value['nickname'],
+                    'avatar' => FileService::getFileUrl($value['avatar']),
+                    'xjTodayTotal' => $tmpTodayTotal,
+                    'xjTotal' => $tmpTotal
+                ];
+
+                $todayTotal = bcadd($todayTotal, $tmpTodayTotal, 2);
+                $total = bcadd($total, $tmpTotal, 2);
+            }
+
+            return $this->success('', [
+                'list' => $newData,
+                'todayTotal' => $todayTotal,
+                'total' => $total
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-UserController-getFriendList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 获取用户折扣
+     *
+     * @return Json
+     */
+    public function getFriendMealList(): Json
+    {
+        try {
+            $userId = $this->request->get('user_id');
+            if (empty($userId)) {
+                return $this->fail('参数缺失');
+            }
+
+            $curUserInfo = UserLogic::getPreviousUserId($userId);
+            if (empty($curUserInfo['id'])) {
+                return $this->fail('用户不存在');
+            }
+            if ($curUserInfo['p_first_user_id'] != $this->userId) {
+                return $this->fail('未绑定直邀好友关系');
+            }
+
+            // 获取套餐列表
+            $mealList = (new MealLogic())->getMealList();
+
+            $newData = [];
+            if (empty($mealList)) {
+                return $this->success('', $newData);
+            }
+
+            // 获取用户列表
+            $userMealList = (new UserMealLogic())->getMealList($userId);
+            if (!empty($userMealList)) {
+                $userMealList = array_column($userMealList, null, 'meal_id');
+            }
+
+            foreach ($mealList as $value) {
+                $typeShow = '';
+                if ($value['type'] == 1) {
+                    $typeShow = '话费';
+                } elseif ($value['type'] == 2) {
+                    $typeShow = '电费';
+                } elseif ($value['type'] == 3) {
+                    $typeShow = '话费快充';
+                }
+
+                $newData[] = [
+                    'id' => $value['id'],
+                    'name' => $value['name'],
+                    'type' => $typeShow,
+                    'discount' => isset($userMealList[$value['id']]) ? $userMealList[$value['id']]['discount'] : $value['discount']
+                ];
+            }
+
+            return $this->success('', $newData);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-UserController-getFriendMealList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * @return Json
+     */
+    public function setFriendDiscount(): Json
+    {
+        $params = (new UserValidate())->post()->goCheck('setFriendDiscount');
+
+        try {
+            if (empty($params['user_id']) || empty($params['list'])) {
+                return $this->fail('参数错误');
+            }
+
+            $paramsList = [];
+            $params['list'] = json_decode($params['list'], true);
+            foreach ($params['list'] as $value) {
+                if (empty($value['id']) || empty($value['discount'])) {
+                    return $this->fail('参数错误');
+                }
+                if ($value['discount'] >= 10 || $value['discount'] <= 0) {
+                    return $this->fail('折扣参数错误');
+                }
+
+                $paramsList[$value['id']] = $value['discount'];
+            }
+
+            $curUserInfo = UserLogic::getPreviousUserId($params['user_id']);
+            if (empty($curUserInfo['id'])) {
+                return $this->fail('用户不存在');
+            }
+            if ($curUserInfo['p_first_user_id'] != $this->userId) {
+                return $this->fail('未绑定直邀好友关系');
+            }
+
+            // 获取套餐列表
+            $mealList = (new MealLogic())->getMealList();
+            if (empty($mealList)) {
+                return $this->fail('没有可用套餐');
+            }
+
+            $userMealLogic = new UserMealLogic();
+
+            // 获取用户列表
+            $userMealList = $userMealLogic->getMealList($params['user_id']);
+            if (!empty($userMealList)) {
+                $userMealList = array_column($userMealList, null, 'meal_id');
+            }
+
+            $failMsg = '';
+            foreach ($mealList as $value) {
+                if (!isset($paramsList[$value['id']])) {
+                    continue;
+                }
+
+                $typeShow = '';
+                if ($value['type'] == 1) {
+                    $typeShow = '话费';
+                } elseif ($value['type'] == 2) {
+                    $typeShow = '电费';
+                } elseif ($value['type'] == 3) {
+                    $typeShow = '话费快充';
+                }
+
+                if (!isset($userMealList[$value['id']])) {
+                    $res = $userMealLogic->addData($params['user_id'], $value['id'], $paramsList[$value['id']]);
+                    if (!$res) {
+                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError();
+                    }
+
+                    continue;
+                }
+
+                $userMealId = $userMealList[$value['id']]['id'];
+                $userMealValue = $userMealList[$value['id']]['discount'];
+                if (bccomp($paramsList[$value['id']], $userMealValue, 2) == 0) {
+                    continue;
+                } else {
+                    $res = $userMealLogic->updateData($userMealId, $paramsList[$value['id']]);
+                    if (!$res) {
+                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError();
+                    }
+                }
+            }
+
+            if ($failMsg != '') {
+                return $this->fail(UserLogic::getError());
+            }
+
+            return $this->success('更新成功');
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-UserController-setFriendDiscount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+
+    }
 }
