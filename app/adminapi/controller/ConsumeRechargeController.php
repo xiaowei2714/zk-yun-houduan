@@ -207,7 +207,7 @@ class ConsumeRechargeController extends BaseAdminController
                 $ratioData['three_ratio'] = ConfigService::get('website', 'card_three_ratio', '');
             }
 
-            $res = ConsumeRechargeLogic::setSuccess($info['id'], $userData, $ratioData);
+            $res = ConsumeRechargeLogic::setSuccess($info, $userData, $ratioData);
             if (!$res) {
                 return $this->fail('设置失败');
             }

@@ -196,6 +196,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 'status' => 1,
                 'meal_discount' => $params['meal_discount'],
                 'pay_price' => $params['pay_price'],
+                'rate' => $params['rate'],
                 'type' => $params['type']
             ];
 

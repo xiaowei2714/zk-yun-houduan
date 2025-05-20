@@ -368,7 +368,8 @@ class ConsumeRechargeController extends BaseApiController
             'recharge_price' => $params['money'],
             'meal_id' => $params['meal_id'],
             'meal_discount' => $params['meal_discount'] ?? '',
-            'pay_price' => $params['meal_discounted_price'],
+            'pay_price' => null,
+            'rate' => null,
             'type' => $params['type']
         ];
 
@@ -402,8 +403,16 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('当前用户账号异常，请联系客服');
         }
 
+        // 获取汇率
+        $rate = ConfigService::get('website', 'reference_rate', '');
+        if (empty($rate)) {
+            return $this->fail('未获取到汇率');
+        }
+
+        $newParams['rate'] = $rate;
+
         // 获取优惠配置
-        $mealInfo = (new UserMealService())->getMealInfo($newParams['meal_id'], $this->userId);
+        $mealInfo = (new UserMealService())->getMealInfo($newParams['meal_id'], $this->userId, $rate);
         if ($mealInfo['type'] != $newParams['type']) {
             return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
@@ -414,9 +423,11 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('充值折扣发生变化，请重新进入充值页面');
         }
 
+        $newParams['pay_price'] = $mealInfo['discounted_price'];
+
         // 比较用户余额
         if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
-//            return $this->fail('余额不足，请前往充值页面进行充值');
+            return $this->fail('余额不足，请前往充值页面进行充值');
         }
 
         if ($newParams['type'] == 1 || $newParams['type'] == 3) {
@@ -619,8 +630,14 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('当前用户账号异常，请联系客服');
         }
 
+        // 获取汇率
+        $rate = ConfigService::get('website', 'reference_rate', '');
+        if (empty($rate)) {
+            return $this->fail('未获取到汇率');
+        }
+
         // 获取设定的充值信息
-        $mealInfo = (new UserMealService())->getMealInfo($params['meal_id'], $this->userId);
+        $mealInfo = (new UserMealService())->getMealInfo($params['meal_id'], $this->userId, $rate);
         if ($mealInfo['type'] != $params['type']) {
             return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
@@ -659,6 +676,7 @@ class ConsumeRechargeController extends BaseApiController
                 'meal_id' => $params['meal_id'],
                 'meal_discount' => $params['meal_discount'],
                 'pay_price' => $mealInfo['discounted_price'],
+                'rate' => $rate,
                 'type' => $params['type'],
                 'recharge_up_price' => 0
             ];
