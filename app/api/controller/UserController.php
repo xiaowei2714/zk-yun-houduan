@@ -15,6 +15,7 @@ namespace app\api\controller;
 
 
 use app\api\logic\MealLogic;
+use app\api\logic\SubstationLogic;
 use app\api\logic\UserLogic;
 use app\api\logic\UserMealLogic;
 use app\api\logic\UserMoneyLogLogic;
@@ -231,17 +232,17 @@ class UserController extends BaseApiController
                 return $this->fail(UserLogic::getError());
             }
 
-            $userIds = array_column($data, 'id');
+            $nUserIds = array_column($data, 'id');
 
             // 获取今日收益
             $startTime = strtotime(date('Y-m-d 00:00:00'));
             $endTime = strtotime(date('Y-m-d 23:59:59'));
 
             // 获取用户返佣
-            $todayGroupSum = UserMoneyLogLogic::groupSum($userIds, $startTime, $endTime);
-            $todayGroupSum = array_column($todayGroupSum, 'change_money', 'user_id');
-            $totalGroupSum = UserMoneyLogLogic::groupSum($userIds);
-            $totalGroupSum = array_column($totalGroupSum, 'change_money', 'user_id');
+            $todayGroupSum = UserMoneyLogLogic::groupSum($this->userId, $nUserIds, $startTime, $endTime);
+            $todayGroupSum = array_column($todayGroupSum, 'change_money', 'n_user_id');
+            $totalGroupSum = UserMoneyLogLogic::groupSum($this->userId, $nUserIds);
+            $totalGroupSum = array_column($totalGroupSum, 'change_money', 'n_user_id');
 
             $todayTotal = 0;
             $total = 0;
@@ -288,6 +289,16 @@ class UserController extends BaseApiController
                 return $this->fail('参数缺失');
             }
 
+            // 查看是否开通分站
+            $substationInfo = SubstationLogic::info($this->userId);
+            if (empty($substationInfo['id'])) {
+                return $this->fail('没有权限，请开通分站');
+            }
+            if ($substationInfo['status'] != 1) {
+                return $this->fail('没有权限，请联系客服人员');
+            }
+
+            // 查询指定用户的信息
             $curUserInfo = UserLogic::getPreviousUserId($userId);
             if (empty($curUserInfo['id'])) {
                 return $this->fail('用户不存在');
@@ -346,6 +357,15 @@ class UserController extends BaseApiController
         try {
             if (empty($params['user_id']) || empty($params['list'])) {
                 return $this->fail('参数错误');
+            }
+
+            // 查看是否开通分站
+            $substationInfo = SubstationLogic::info($this->userId);
+            if (empty($substationInfo['id'])) {
+                return $this->fail('没有权限，请开通分站');
+            }
+            if ($substationInfo['status'] != 1) {
+                return $this->fail('没有权限，请联系客服人员');
             }
 
             $paramsList = [];

@@ -16,7 +16,10 @@ declare(strict_types=1);
 
 namespace app\common\service;
 
+use app\adminapi\logic\ConfigLogic;
 use app\common\model\Config;
+use think\facade\Log;
+use Exception;
 
 class ConfigService
 {
@@ -95,6 +98,26 @@ class ConfigService
         }
         if ($data) {
             return $data;
+        }
+    }
+
+    /**
+     * @param string $type
+     * @param array $names
+     * @return array|false
+     */
+    public static function getByNames(string $type, array $names = []): bool|array
+    {
+        try {
+            return Config::field(['name', 'value'])
+                ->where('type', '=', $type)
+                ->whereIn('name', $names)
+                ->select()
+                ->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConfigService-getByNames Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
         }
     }
 }

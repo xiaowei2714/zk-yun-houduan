@@ -36,6 +36,34 @@ class ConsumeRechargeLogic extends BaseLogic
     }
 
     /**
+     * 获取详情
+     *
+     * @param $id
+     * @return ConsumeRecharge|array|false|Model|null
+     */
+    public static function infoHaveUser($id)
+    {
+        try {
+            $alias = 'cr';
+            $aliasD = $alias . '.';
+            return ConsumeRecharge::field([
+                $aliasD . '*',
+                'u.p_first_user_id as first_user_id',
+                'u.p_second_user_id as second_user_id',
+                'u.p_three_user_id as three_user_id',
+            ])
+                ->alias($alias)
+                ->leftJoin('user u', $aliasD . 'user_id = u.id')
+                ->where($aliasD . 'id', $id)
+                ->find();
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 获取数据
      *
      * @param $ids
@@ -50,6 +78,43 @@ class ConsumeRechargeLogic extends BaseLogic
                 ->toArray();
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeRechargeLogic-getData Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取数据
+     *
+     * @param $ids
+     * @return array|false
+     */
+    public static function getDataHaveUser($ids)
+    {
+        try {
+
+            $alias = 'cr';
+            $aliasD = $alias . '.';
+            return ConsumeRecharge::field([
+                $aliasD . 'id as id',
+                $aliasD . 'sn',
+                $aliasD . 'status',
+                $aliasD . 'type',
+                $aliasD . 'pay_price',
+                $aliasD . 'user_id',
+                $aliasD . 'recharge_price',
+                'u.p_first_user_id as first_user_id',
+                'u.p_second_user_id as second_user_id',
+                'u.p_three_user_id as three_user_id',
+            ])
+                ->alias($alias)
+                ->leftJoin('user u', $aliasD . 'user_id = u.id')
+                ->whereIn($aliasD . 'id', $ids)
+                ->select()
+                ->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-getDataHaveUser Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             self::setError($e->getMessage());
             return false;
         }
@@ -108,12 +173,11 @@ class ConsumeRechargeLogic extends BaseLogic
     /**
      * 设置为成功
      *
-     * @param $id
-     * @param $userData
+     * @param $info
      * @param $ratioData
      * @return bool
      */
-    public static function setSuccess($info, $userData, $ratioData): bool
+    public static function setSuccess($info, $ratioData): bool
     {
         try {
             Db::startTrans();
@@ -139,9 +203,9 @@ class ConsumeRechargeLogic extends BaseLogic
             }
 
             // 返佣第一人
-            if (!empty($userData['first_user_id']) && !empty($ratioData['first_ratio'])) {
+            if (!empty($info['first_user_id']) && !empty($ratioData['first_ratio'])) {
 
-                $tmpUserId = $userData['first_user_id'];
+                $tmpUserId = $info['first_user_id'];
 
                 // 查看是否已返佣过
                 $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
@@ -181,6 +245,7 @@ class ConsumeRechargeLogic extends BaseLogic
 
                     $billData = [
                         'user_id' => $tmpUserId,
+                        'n_user_id' => $info['user_id'],
                         'type' => 3,
                         'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['first_ratio'] . '%',
                         'change_type' => 1,
@@ -199,9 +264,9 @@ class ConsumeRechargeLogic extends BaseLogic
             }
 
             // 返佣第二人
-            if (!empty($userData['second_user_id']) && !empty($ratioData['second_ratio'])) {
+            if (!empty($info['second_user_id']) && !empty($ratioData['second_ratio'])) {
 
-                $tmpUserId = $userData['second_user_id'];
+                $tmpUserId = $info['second_user_id'];
 
                 // 查看是否已返佣过
                 $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
@@ -241,6 +306,7 @@ class ConsumeRechargeLogic extends BaseLogic
 
                     $billData = [
                         'user_id' => $tmpUserId,
+                        'n_user_id' => $info['user_id'],
                         'type' => 3,
                         'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['second_ratio'] . '%',
                         'change_type' => 1,
@@ -259,9 +325,9 @@ class ConsumeRechargeLogic extends BaseLogic
             }
 
             // 返佣第三人
-            if (!empty($userData['three_user_id']) && !empty($ratioData['three_ratio'])) {
+            if (!empty($info['three_user_id']) && !empty($ratioData['three_ratio'])) {
 
-                $tmpUserId = $userData['three_user_id'];
+                $tmpUserId = $info['three_user_id'];
 
                 // 查看是否已返佣过
                 $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
@@ -301,6 +367,7 @@ class ConsumeRechargeLogic extends BaseLogic
 
                     $billData = [
                         'user_id' => $tmpUserId,
+                        'n_user_id' => $info['user_id'],
                         'type' => 3,
                         'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['three_ratio'] . '%',
                         'change_type' => 1,

@@ -160,7 +160,7 @@ class ConsumeRechargeController extends BaseAdminController
         $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
 
         try {
-            $info = ConsumeRechargeLogic::info($params['id']);
+            $info = ConsumeRechargeLogic::infoHaveUser($params['id']);
             if (empty($info) || empty($info['id'])) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
             }
@@ -171,43 +171,56 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败，当前状态为已失败');
             }
 
-            // 获取用户详情
-            $userInfo = UserLogic::info($info['user_id']);
-            if (empty($userInfo) || empty($userInfo['id'])) {
-                return $this->fail('用户不存在？？？');
-            }
-
-            $userData = [
-                'first_user_id' => $userInfo['p_first_user_id'],
-                'second_user_id' => $userInfo['p_second_user_id'],
-                'three_user_id' => $userInfo['p_three_user_id']
-            ];
-
             $ratioData = [
                 'first_ratio' => '',
                 'second_ratio' => '',
                 'three_ratio' => ''
             ];
 
+            $confNames = [];
             if ($info['type'] == 1) {
-                $ratioData['first_ratio'] = ConfigService::get('website', 'phone_first_ratio', '');
-                $ratioData['second_ratio'] = ConfigService::get('website', 'phone_second_ratio', '');
-                $ratioData['three_ratio'] = ConfigService::get('website', 'phone_three_ratio', '');
+                $confNames[] = 'phone_first_ratio';
+                $confNames[] = 'phone_second_ratio';
+                $confNames[] = 'phone_three_ratio';
             } elseif ($info['type'] == 2) {
-                $ratioData['first_ratio'] = ConfigService::get('website', 'electricity_first_ratio', '');
-                $ratioData['second_ratio'] = ConfigService::get('website', 'electricity_second_ratio', '');
-                $ratioData['three_ratio'] = ConfigService::get('website', 'electricity_three_ratio', '');
+                $confNames[] = 'electricity_first_ratio';
+                $confNames[] = 'electricity_second_ratio';
+                $confNames[] = 'electricity_three_ratio';
             } elseif ($info['type'] == 3) {
-                $ratioData['first_ratio'] = ConfigService::get('website', 'quickly_first_ratio', '');
-                $ratioData['second_ratio'] = ConfigService::get('website', 'quickly_second_ratio', '');
-                $ratioData['three_ratio'] = ConfigService::get('website', 'quickly_three_ratio', '');
+                $confNames[] = 'quickly_first_ratio';
+                $confNames[] = 'quickly_second_ratio';
+                $confNames[] = 'quickly_three_ratio';
             } elseif ($info['type'] == 4) {
-                $ratioData['first_ratio'] = ConfigService::get('website', 'card_first_ratio', '');
-                $ratioData['second_ratio'] = ConfigService::get('website', 'card_second_ratio', '');
-                $ratioData['three_ratio'] = ConfigService::get('website', 'card_three_ratio', '');
+                $confNames[] = 'card_first_ratio';
+                $confNames[] = 'card_second_ratio';
+                $confNames[] = 'card_three_ratio';
             }
 
-            $res = ConsumeRechargeLogic::setSuccess($info, $userData, $ratioData);
+            if (empty($confNames)) {
+                return $this->fail('类型异常');
+            }
+
+            $confData = ConfigService::getByNames('website', $confNames);
+            $confData = array_column($confData, 'value', 'name');
+            if ($info['type'] == 1) {
+                $ratioData['first_ratio'] = $confData['phone_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['phone_second_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['phone_three_ratio'] ?? '';
+            } elseif ($info['type'] == 2) {
+                $ratioData['first_ratio'] = $confData['electricity_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['electricity_second_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['electricity_three_ratio'] ?? '';
+            } elseif ($info['type'] == 3) {
+                $ratioData['first_ratio'] = $confData['quickly_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['quickly_first_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['quickly_three_ratio'] ?? '';
+            } elseif ($info['type'] == 4) {
+                $ratioData['first_ratio'] = $confData['card_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['card_second_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['card_three_ratio'] ?? '';
+            }
+
+            $res = ConsumeRechargeLogic::setSuccess($info, $ratioData);
             if (!$res) {
                 return $this->fail('设置失败');
             }
@@ -230,10 +243,40 @@ class ConsumeRechargeController extends BaseAdminController
         $params = (new ConsumeRechargeValidate())->post()->goCheck('needIds');
 
         try {
-            $data = ConsumeRechargeLogic::getData($params['ids']);
+            $data = ConsumeRechargeLogic::getDataHaveUser($params['ids']);
             if (empty($data)) {
                 return $this->fail('不存在的数据，请刷新页面后再试');
             }
+
+            $types = array_unique(array_column($data, 'type'));
+
+            $confNames = [];
+            if (in_array(1, $types)) {
+                $confNames[] = 'phone_first_ratio';
+                $confNames[] = 'phone_second_ratio';
+                $confNames[] = 'phone_three_ratio';
+            }
+            if (in_array(2, $types)) {
+                $confNames[] = 'electricity_first_ratio';
+                $confNames[] = 'electricity_second_ratio';
+                $confNames[] = 'electricity_three_ratio';
+            }
+            if (in_array(3, $types)) {
+                $confNames[] = 'quickly_first_ratio';
+                $confNames[] = 'quickly_second_ratio';
+                $confNames[] = 'quickly_three_ratio';
+            }
+            if (in_array(4, $types)) {
+                $confNames[] = 'card_first_ratio';
+                $confNames[] = 'card_second_ratio';
+                $confNames[] = 'card_three_ratio';
+            }
+            if (empty($confNames)) {
+                return $this->fail('类型异常');
+            }
+
+            $confData = ConfigService::getByNames('website', $confNames);
+            $confData = array_column($confData, 'value', 'name');
 
             $selectIds = [];
             $failMsg = '';
@@ -249,7 +292,31 @@ class ConsumeRechargeController extends BaseAdminController
                     continue;
                 }
 
-                $res = ConsumeRechargeLogic::setSuccess($value['id']);
+                $ratioData = [
+                    'first_ratio' => '',
+                    'second_ratio' => '',
+                    'three_ratio' => ''
+                ];
+
+                if ($value['type'] == 1) {
+                    $ratioData['first_ratio'] = $confData['phone_first_ratio'] ?? '';
+                    $ratioData['second_ratio'] = $confData['phone_second_ratio'] ?? '';
+                    $ratioData['three_ratio'] = $confData['phone_three_ratio'] ?? '';
+                } elseif ($value['type'] == 2) {
+                    $ratioData['first_ratio'] = $confData['electricity_first_ratio'] ?? '';
+                    $ratioData['second_ratio'] = $confData['electricity_second_ratio'] ?? '';
+                    $ratioData['three_ratio'] = $confData['electricity_three_ratio'] ?? '';
+                } elseif ($value['type'] == 3) {
+                    $ratioData['first_ratio'] = $confData['quickly_first_ratio'] ?? '';
+                    $ratioData['second_ratio'] = $confData['quickly_first_ratio'] ?? '';
+                    $ratioData['three_ratio'] = $confData['quickly_three_ratio'] ?? '';
+                } elseif ($value['type'] == 4) {
+                    $ratioData['first_ratio'] = $confData['card_first_ratio'] ?? '';
+                    $ratioData['second_ratio'] = $confData['card_second_ratio'] ?? '';
+                    $ratioData['three_ratio'] = $confData['card_three_ratio'] ?? '';
+                }
+
+                $res = ConsumeRechargeLogic::setSuccess($value, $ratioData);
                 if (!$res) {
                     $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
                 }

@@ -29,8 +29,6 @@ use app\adminapi\validate\SubstationValidate;
  */
 class SubstationController extends BaseAdminController
 {
-
-
     /**
      * @notes 获取列表
      * @return \think\response\Json

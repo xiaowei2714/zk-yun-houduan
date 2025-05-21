@@ -21,6 +21,9 @@ use app\adminapi\validate\user\UserValidate;
 use app\common\model\SetMeal;
 use app\common\model\user\User;
 use app\common\model\UserMealDiscount;
+use think\facade\Log;
+use Exception;
+use think\response\Json;
 
 /**
  * 用户控制器
@@ -32,7 +35,7 @@ class UserController extends BaseAdminController
 
     /**
      * @notes 用户列表
-     * @return \think\response\Json
+     * @return Json
      * @author 段誉
      * @date 2022/9/22 16:16
      */
@@ -45,7 +48,7 @@ class UserController extends BaseAdminController
      * 保存折扣
      * Author: Jarshs
      * 2025/4/30
-     * @return \think\response\Json
+     * @return Json
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -73,7 +76,7 @@ class UserController extends BaseAdminController
      * 获取用户折扣
      * Author: Jarshs
      * 2025/4/30
-     * @return \think\response\Json
+     * @return Json
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -89,7 +92,7 @@ class UserController extends BaseAdminController
             return $this->fail('用户不存在');
         }
         // 获取套餐列表
-        $meal_list = SetMeal::order('type','asc')->order('sort','desc')->field('id,name,type,discount')->select()->toArray();
+        $meal_list = SetMeal::order('type', 'asc')->order('sort', 'desc')->field('id,name,type,discount')->select()->toArray();
         foreach ($meal_list as &$item) {
             $userMeal = UserMealDiscount::where(['user_id' => $userId, 'meal_id' => $item['id']])->find();
             if ($userMeal) {
@@ -102,10 +105,33 @@ class UserController extends BaseAdminController
         ]);
     }
 
+    /**
+     * @return Json
+     */
+    public function searchUser(): Json
+    {
+        try {
+            $search = $this->request->get('search');
+            if (empty($search)) {
+                return $this->success('', []);
+            }
+
+            $data = UserLogic::searchData($search);
+            if ($data === false) {
+                return $this->fail(UserLogic::getError());
+            }
+
+            return $this->success('', $data);
+        } catch (Exception $e) {
+            Log::record('Exception: api-UserController-searchUser Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
 
     /**
      * @notes 获取用户详情
-     * @return \think\response\Json
+     * @return Json
      * @author 段誉
      * @date 2022/9/22 16:34
      */
@@ -119,7 +145,7 @@ class UserController extends BaseAdminController
 
     /**
      * @notes 编辑用户信息
-     * @return \think\response\Json
+     * @return Json
      * @author 段誉
      * @date 2022/9/22 16:34
      */
@@ -133,7 +159,7 @@ class UserController extends BaseAdminController
 
     /**
      * @notes 调整用户余额
-     * @return \think\response\Json
+     * @return Json
      * @author 段誉
      * @date 2023/2/23 14:33
      */

@@ -18,6 +18,7 @@ namespace app\adminapi\lists;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\model\Substation;
 use app\common\lists\ListsSearchInterface;
+use think\facade\Db;
 
 
 /**
@@ -43,24 +44,81 @@ class SubstationLists extends BaseAdminDataLists implements ListsSearchInterface
         ];
     }
 
-
     /**
-     * @notes 获取列表
+     * 获取列表
+     *
      * @return array
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @author Jarshs
-     * @date 2025/03/31 15:52
      */
     public function lists(): array
     {
-        return Substation::where($this->searchWhere)
-            ->field(['id', 'user_id', 'parent_user_id', 'create_time', 'status'])
-            ->limit($this->limitOffset, $this->limitLength)
-            ->order(['id' => 'desc'])
-            ->select()
-            ->toArray();
+        $tablePre = env('database.prefix');
+        $alias = '`sub`';
+        $aliasD = $alias . '.';
+        $userTable = $tablePre . 'user';
+        $subTable = $tablePre . 'substation';
+        $userMoneyLogTable = $tablePre . 'user_money_log';
+
+        $params = $this->params;
+        $newWhere = $aliasD . '`delete_time` IS NULL';
+        if (isset($params['user_id']) && $params['user_id'] !== '' && $params['user_id'] !== null) {
+            $newWhere .= ' AND `u`.`nickname` like "%' . $params['user_id']. '%"';
+        }
+
+        if (!empty($params['status'])) {
+            $newWhere .= ' AND ' . $aliasD . '`status` = ' . $params['status'];
+        }
+
+        $today = strtotime(date('Y-m-d 00:00:00'));
+
+        $sql = <<< EOT
+SELECT
+	$aliasD`id`,
+	$aliasD`user_id`,
+	$aliasD`parent_user_id`,
+	$aliasD`status`,
+	$aliasD`create_time`,
+	u.user_money AS user_money,
+	u.total_award_price AS user_award_price,
+	u.nickname AS u_nickname,
+	pu.nickname AS pu_nickname,
+	(
+	    SELECT count(*) FROM $userTable WHERE p_first_user_id = `user_id` 
+	) AS n_count,
+    (
+	    SELECT sum( `change_money` ) FROM $userMoneyLogTable WHERE user_id = `user_id` AND create_time >= $today 
+	) AS today_award_price 
+    FROM
+	    `$subTable` `sub`
+	    LEFT JOIN `$userTable` `u` ON `sub`.`user_id` = `u`.`id`
+	    LEFT JOIN `$userTable` `pu` ON `sub`.`parent_user_id` = `pu`.`id` 
+    WHERE
+        $newWhere
+    ORDER BY
+        `id` DESC 
+        LIMIT $this->limitOffset,
+        $this->limitLength
+EOT;
+
+        $lists = Db::query($sql);
+
+        $newData = [];
+        foreach ($lists as $item) {
+            $newData[] = [
+                'id' => $item['id'],
+                'user_id' => $item['user_id'],
+                'parent_user_id' => $item['parent_user_id'],
+                'user_money' => $item['user_money'],
+                'today_award_price' => $item['today_award_price'] ?? '0.00',
+                'user_award_price' => $item['user_award_price'] ?? '0.00',
+                'user_show' => $item['u_nickname'],
+                'p_user_show' => $item['pu_nickname'],
+                'n_count' => $item['n_count'],
+                'status' => $item['status'],
+                'ctime' => $item['create_time'],
+            ];
+        }
+
+        return $newData;
     }
 
 
@@ -72,7 +130,25 @@ class SubstationLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return Substation::where($this->searchWhere)->count();
-    }
+        $tablePre = env('database.prefix');
+        $userTable = $tablePre . 'user';
+        $subTable = $tablePre . 'substation';
 
+        $params = $this->params;
+        $newWhere = '`sub`.`delete_time` IS NULL';
+        if (isset($params['user_id']) && $params['user_id'] !== '' && $params['user_id'] !== null) {
+            $newWhere .= ' AND `u`.`nickname` like "%' . $params['user_id']. '%"';
+        }
+
+        if (!empty($params['status'])) {
+            $newWhere .= ' AND `sub`.`status` = ' . $params['status'];
+        }
+
+        $sql = <<< EOT
+SELECT COUNT(*) AS cou FROM `$subTable` `sub` LEFT JOIN `$userTable` `u` ON `sub`.`user_id` = `u`.`id` WHERE $newWhere
+EOT;
+
+        $res = Db::query($sql);
+        return $res[0]['cou'] ?? 0;
+    }
 }

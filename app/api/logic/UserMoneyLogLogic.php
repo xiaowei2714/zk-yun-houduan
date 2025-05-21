@@ -22,12 +22,13 @@ class UserMoneyLogLogic extends BaseLogic
     /**
      * 统计
      *
-     * @param $userIds
+     * @param $userId
+     * @param $nUserIds
      * @param $startTime
      * @param $endTime
      * @return array|false
      */
-    public static function groupSum($userIds, $startTime = null, $endTime = null)
+    public static function groupSum($userId, $nUserIds, $startTime = null, $endTime = null)
     {
         try {
 
@@ -37,17 +38,18 @@ class UserMoneyLogLogic extends BaseLogic
             ];
 
             $obj = UserMoneyLog::field([
-                'user_id',
+                'n_user_id',
                 "sum(`change_money`) as change_money"
             ])
                 ->where($where)
-                ->whereIn('user_id', $userIds);
+                ->where('user_id', $userId)
+                ->whereIn('n_user_id', $nUserIds);
 
             if (!empty($startTime) && !empty($endTime)) {
                 $obj = $obj->whereBetween('create_time', [$startTime, $endTime]);
             }
 
-            return $obj->group(['user_id'])
+            return $obj->group(['n_user_id'])
                 ->select()
                 ->toArray();
 

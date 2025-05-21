@@ -51,7 +51,7 @@ use think\response\Json;
  */
 class IndexController extends BaseApiController
 {
-    public array $notNeedLogin = ['index', 'config', 'policy', 'decorate', 'getPrivacy','getSetting','sendCode','register','login','changePwd','getIndexConfig',
+    public array $notNeedLogin = ['index', 'config', 'policy', 'decorate', 'getPrivacy', 'getSetting', 'sendCode', 'register', 'login', 'changePwd', 'getIndexConfig',
         'getNoticeList', 'getNoticeDetail', 'getKf'];
 
     /**
@@ -115,7 +115,7 @@ class IndexController extends BaseApiController
             return $this->fail('您的余额不足');
         }
         if ($num > $ad->num) {
-            return $this->fail('购买数量超过卖家可卖数量，卖家当前可卖数量为：'.$ad->num);
+            return $this->fail('购买数量超过卖家可卖数量，卖家当前可卖数量为：' . $ad->num);
         }
         if ($pay_type == 'wx') {
             $userwx = UserPayType::where(['user_id' => $this->userId, 'type' => 'wx'])->find();
@@ -178,7 +178,7 @@ class IndexController extends BaseApiController
 
             Log::info("订单取消任务已推送", ['order_id' => $orderId]);
         } catch (\Exception $e) {
-            Log::error("订单取消任务推送失败: ".$e->getMessage(), [
+            Log::error("订单取消任务推送失败: " . $e->getMessage(), [
                 'order_id' => $orderId,
                 'error' => $e
             ]);
@@ -203,8 +203,8 @@ class IndexController extends BaseApiController
         }
         $payType = json_decode($info['pay_type'], true);
         $info['pay_type'] = explode(",", $payType);
-        $zxjye = number_format($info['min_price'] * $info['price'],2);
-        $zdjye = number_format($info['max_price'] * $info['price'],2);
+        $zxjye = number_format($info['min_price'] * $info['price'], 2);
+        $zdjye = number_format($info['max_price'] * $info['price'], 2);
         $info['zdjye2'] = $info['max_price'] * $info['price'];
         $info['zxjye'] = $zxjye;
         $info['zdjye'] = $zdjye;
@@ -366,7 +366,7 @@ class IndexController extends BaseApiController
     public function getAdUserMoney()
     {
         $user = User::find($this->userId);
-        return $this->success('',[
+        return $this->success('', [
             'user_money' => $user->user_money,
         ]);
     }
@@ -383,7 +383,7 @@ class IndexController extends BaseApiController
     public function getAdPerm()
     {
         $user = User::find($this->userId);
-        return $this->success('',[
+        return $this->success('', [
             'ad_perm' => $user->ad_perm,
         ]);
     }
@@ -411,7 +411,7 @@ class IndexController extends BaseApiController
             $item['status_b'] = !($item['status'] == 1);
         }
 
-        return $this->success('',[
+        return $this->success('', [
             'list' => $list
         ]);
     }
@@ -423,7 +423,8 @@ class IndexController extends BaseApiController
      * @param $nickname
      * @return string
      */
-    private function getFirstChar($nickname) {
+    private function getFirstChar($nickname)
+    {
         if (empty($nickname)) {
             return '';
         }
@@ -466,8 +467,8 @@ class IndexController extends BaseApiController
             $listQuery->whereBetween('create_time', [$startTime, $endTime]);
         } else {
             if ($date) {
-                $startTime = strtotime($date.' 00:00:00');
-                $endTime = strtotime($date.' 23:59:59');
+                $startTime = strtotime($date . ' 00:00:00');
+                $endTime = strtotime($date . ' 23:59:59');
                 $listQuery->whereBetween('create_time', [$startTime, $endTime]);
             }
         }
@@ -488,10 +489,10 @@ class IndexController extends BaseApiController
             }
         }
 
-        return $this->success('',[
+        return $this->success('', [
             'list' => $list,
-            'shouru' => number_format($shouru,2),
-            'zhichu' => number_format($zhichu,2),
+            'shouru' => number_format($shouru, 2),
+            'zhichu' => number_format($zhichu, 2),
         ]);
     }
 
@@ -509,7 +510,7 @@ class IndexController extends BaseApiController
         $list = Withdraw::where(['user_id' => $this->userId])
             ->select()
             ->toArray();
-        return $this->success('',[
+        return $this->success('', [
             'list' => $list
         ]);
     }
@@ -564,7 +565,8 @@ class IndexController extends BaseApiController
      * @param $productType
      * @return string
      */
-    private function generateOrderNo($userId, $productType = 1) {
+    private function generateOrderNo($userId, $productType = 1)
+    {
         $prefix = [
             1 => 'T', // 提现
             2 => 'G', // 充值
@@ -654,7 +656,7 @@ class IndexController extends BaseApiController
         }
 //        $sub['status'] = $sub->status;
 
-        return $this->success('',[
+        return $this->success('', [
             'substation' => $sub,
             'open_substation_tips' => ConfigService::get('website', 'open_substation_tips', ''),
             'substation_price' => ConfigService::get('website', 'substation_price', '')
@@ -713,7 +715,7 @@ class IndexController extends BaseApiController
 //        $startTime = date('Y-m-d 00:00:00');
 //        $endTime = date('Y-m-d 23:59:59');
 
-        return $this->success('',[
+        return $this->success('', [
             'invite' => $user->invite_code,
             'one_xj' => User::where(['p_first_user_id' => $this->userId])->count(),
             'two_xj' => User::where(['p_second_user_id' => $this->userId])->count(),
@@ -759,7 +761,7 @@ class IndexController extends BaseApiController
         }
 
         $parent = User::where(['id' => $user->p_first_user_id])
-            ->field('avatar,nickname')
+            ->field('id,avatar,nickname')
             ->find();
         if ($parent) {
             $parentSubNums = User::where('p_first_user_id', $parent->id)
@@ -769,7 +771,6 @@ class IndexController extends BaseApiController
             $parent['xj_nums'] = $parentSubNums;
             $parent['avatar'] = FileService::getFileUrl($parent->avatar);
         }
-
 
         return $this->success('', [
             'todayTotal' => $todayTotal,
@@ -809,7 +810,7 @@ class IndexController extends BaseApiController
             ];
         }
 
-        return $this->success('',[
+        return $this->success('', [
             'list' => $newData,
             'reference_rate' => $rate
         ]);
@@ -843,7 +844,7 @@ class IndexController extends BaseApiController
             ];
         }
 
-        return $this->success('',[
+        return $this->success('', [
             'list' => $newData,
             'reference_rate' => $rate
         ]);
@@ -877,7 +878,7 @@ class IndexController extends BaseApiController
             ];
         }
 
-        return $this->success('',[
+        return $this->success('', [
             'list' => $newData,
             'reference_rate' => $rate
         ]);
@@ -895,7 +896,7 @@ class IndexController extends BaseApiController
             $discount = '';
         }
 
-        return $this->success('',[
+        return $this->success('', [
             'discount' => $discount,
             'rate' => ConfigService::get('website', 'reference_rate', '')
         ]);
@@ -933,11 +934,11 @@ class IndexController extends BaseApiController
      */
     public function getNoticeList()
     {
-        $list = Notice::where(['type' => 1])->order('id','desc')->select()->toArray();
+        $list = Notice::where(['type' => 1])->order('id', 'desc')->select()->toArray();
         foreach ($list as &$v) {
             $v['content'] = $this->cleanHtml($v['content']);
         }
-        return $this->success('',[
+        return $this->success('', [
             'list' => $list
         ]);
     }
@@ -950,7 +951,8 @@ class IndexController extends BaseApiController
      * @param $allowed_tags
      * @return string
      */
-    private function cleanHtml($input, $allowed_tags = '') {
+    private function cleanHtml($input, $allowed_tags = '')
+    {
         // 去除HTML标签
         $output = strip_tags($input, $allowed_tags);
 
@@ -970,7 +972,7 @@ class IndexController extends BaseApiController
     public function getIndexConfig()
     {
         $notice = Notice::where(['type' => 1])->select()->toArray();
-        return $this->success('',[
+        return $this->success('', [
             'shop_name' => ConfigService::get('website', 'shop_name'),
             'index_banner' => FileService::getFileUrl(ConfigService::get('website', 'index_banner')),
             'notice' => $notice
@@ -990,7 +992,7 @@ class IndexController extends BaseApiController
     {
         $type = $this->request->get('type');
         $pay = UserPayType::where(['user_id' => $this->userId, 'type' => $type])->find();
-        return $this->success('',[
+        return $this->success('', [
             'info' => $pay,
         ]);
     }
@@ -1042,7 +1044,7 @@ class IndexController extends BaseApiController
         $card = UserPayType::where(['user_id' => $this->userId, 'type' => 'yhk'])->findOrEmpty();
         $usdt = UserPayType::where(['user_id' => $this->userId, 'type' => 'usdt'])->findOrEmpty();
 
-        return $this->success('',[
+        return $this->success('', [
             'wx' => $wx,
             'alipay' => $alipay,
             'card' => $card,
@@ -1127,7 +1129,7 @@ class IndexController extends BaseApiController
         if (!$user) {
             return $this->fail('用户不存在');
         }
-        return $this->success('',[
+        return $this->success('', [
             'order_success_notice' => $user->order_success_notice ? 1 : 0,
             'order_fail_notice' => $user->order_fail_notice ? 1 : 0,
         ]);
@@ -1241,16 +1243,16 @@ class IndexController extends BaseApiController
      */
     public function getUserInfo()
     {
-        $user = User::where('id',$this->userId)->field('id,sn,avatar,nickname,account,user_money,invite_code,freeze_money')->find();
-        $substation = Substation::where('user_id',$this->userId)->find();
+        $user = User::where('id', $this->userId)->field('id,sn,avatar,nickname,account,user_money,invite_code,freeze_money')->find();
+        $substation = Substation::where('user_id', $this->userId)->find();
         if ($substation) {
             $user['is_substation'] = true;
         } else {
             $user['is_substation'] = false;
         }
-        $userPayTypes = UserPayType::where('user_id',$this->userId)->count();
+        $userPayTypes = UserPayType::where('user_id', $this->userId)->count();
         $user['pay_type_count'] = $userPayTypes;
-        return $this->success('',[
+        return $this->success('', [
             'info' => $user
         ]);
     }
@@ -1278,7 +1280,7 @@ class IndexController extends BaseApiController
             return $this->fail('用户不存在');
         }
 
-        $writeOffUser = WriteOffUser::where('user_id',$this->userId)->find();
+        $writeOffUser = WriteOffUser::where('user_id', $this->userId)->find();
         if ($writeOffUser) {
             return $this->fail('用户已注销');
         }
@@ -1307,7 +1309,7 @@ class IndexController extends BaseApiController
         $avatar = $user->avatar ?: Config::get('project.default_image.user_avatar');
         $avatar = FileService::getFileUrl($avatar);
 
-        return $this->success('',[
+        return $this->success('', [
             'nickname' => $userInfo['nickname'],
             'sn' => $userInfo['sn'],
             'mobile' => $userInfo['mobile'],
@@ -1331,7 +1333,7 @@ class IndexController extends BaseApiController
 //                throw new \Exception('验证码错误或已过期');
             }
 
-            $writeOffUser = WriteOffUser::where('email',$postData['email'])->find();
+            $writeOffUser = WriteOffUser::where('email', $postData['email'])->find();
             if ($writeOffUser) {
                 return $this->fail('用户已注销');
             }
@@ -1413,13 +1415,13 @@ class IndexController extends BaseApiController
             // 发送邮件
             $mail = new PHPMailer(true);
             $config = [
-                'host'       => ConfigService::get('website', 'email_host', ''),    // SMTP服务器
-                'username'   => ConfigService::get('website', 'email_username', ''),    // 邮箱账号
-                'password'   => ConfigService::get('website', 'email_password', ''), // 邮箱授权码
-                'port'       => ConfigService::get('website', 'email_port', ''),              // SMTP端口
+                'host' => ConfigService::get('website', 'email_host', ''),    // SMTP服务器
+                'username' => ConfigService::get('website', 'email_username', ''),    // 邮箱账号
+                'password' => ConfigService::get('website', 'email_password', ''), // 邮箱授权码
+                'port' => ConfigService::get('website', 'email_port', ''),              // SMTP端口
                 'encryption' => ConfigService::get('website', 'email_encryption', ''),            // 加密方式
-                'from'       => ConfigService::get('website', 'email_from', ''),    // 发件人邮箱
-                'from_name'  => ConfigService::get('website', 'email_from_name', ''),      // 发件人名称
+                'from' => ConfigService::get('website', 'email_from', ''),    // 发件人邮箱
+                'from_name' => ConfigService::get('website', 'email_from_name', ''),      // 发件人名称
             ];
 
             $mail->isSMTP();
@@ -1476,7 +1478,7 @@ class IndexController extends BaseApiController
      */
     public function getSetting()
     {
-        return $this->success('',[
+        return $this->success('', [
             'info' => [
                 'shop_logo' => FileService::getFileUrl(ConfigService::get('website', 'shop_logo')),
                 'shop_name' => ConfigService::get('website', 'shop_name')
@@ -1508,7 +1510,7 @@ class IndexController extends BaseApiController
         } else {
             return $this->fail('参数错误');
         }
-        return $this->success('',[
+        return $this->success('', [
             'title' => $title,
             'content' => $content,
         ]);

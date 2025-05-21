@@ -32,28 +32,30 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
      */
     public function lists(): array
     {
+        $alias = 'cr';
+        $aliasD = $alias . '.';
         $lists = ConsumeRecharge::field([
-            'cr.id as id',
-            'cr.sn',
-            'cr.user_id',
-            'cr.account',
-            'cr.account_type',
-            'cr.name_area',
-            'cr.recharge_price',
-            'cr.recharge_up_price',
-            'cr.recharge_down_price',
-            'cr.balances_price',
-            'cr.pay_price',
-            'cr.status',
-            'cr.type',
-            'cr.pay_time',
-            'cr.create_time',
+            $aliasD . 'id as id',
+            $aliasD . 'sn',
+            $aliasD . 'user_id',
+            $aliasD . 'account',
+            $aliasD . 'account_type',
+            $aliasD . 'name_area',
+            $aliasD . 'recharge_price',
+            $aliasD . 'recharge_up_price',
+            $aliasD . 'recharge_down_price',
+            $aliasD . 'balances_price',
+            $aliasD . 'pay_price',
+            $aliasD . 'status',
+            $aliasD . 'type',
+            $aliasD . 'pay_time',
+            $aliasD . 'create_time',
             'u.nickname'
         ])
-            ->alias('cr')
-            ->leftJoin('user u', 'cr.user_id = u.id')
-            ->where($this->handleWhereData($this->params, 'cr.'))
-            ->order('cr.id desc')
+            ->alias($alias)
+            ->leftJoin('user u', $aliasD . 'user_id = u.id')
+            ->where($this->handleWhereData($this->params, $aliasD))
+            ->order($aliasD . 'id desc')
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();

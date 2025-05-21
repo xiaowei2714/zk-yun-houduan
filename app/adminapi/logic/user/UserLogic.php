@@ -19,7 +19,9 @@ use app\common\logic\AccountLogLogic;
 use app\common\logic\BaseLogic;
 use app\common\model\user\User;
 use think\facade\Db;
+use think\facade\Log;
 use think\Model;
+use Exception;
 
 /**
  * 用户逻辑层
@@ -28,6 +30,20 @@ use think\Model;
  */
 class UserLogic extends BaseLogic
 {
+    /**
+     * @param $value
+     * @return array|false
+     */
+    public static function searchData($value)
+    {
+        try {
+            return User::where('nickname', 'like', '%' . $value . '%')->field('id,nickname')->select()->toArray();
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-UserLogic-searchData Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * @param int $userId
