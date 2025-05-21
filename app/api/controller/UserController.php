@@ -449,6 +449,5 @@ class UserController extends BaseApiController
             Log::record('Exception: api-UserController-setFriendDiscount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
-
     }
 }

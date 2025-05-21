@@ -25,8 +25,6 @@ use app\common\enum\user\AccountLogEnum;
  */
 class AccountLogController extends BaseAdminController
 {
-
-
     /**
      * @notes 账户流水明细
      * @return \think\response\Json

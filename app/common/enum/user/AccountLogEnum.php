@@ -47,6 +47,7 @@ class AccountLogEnum
      */
     const UM_DEC_ADMIN = 100;
     const UM_DEC_RECHARGE_REFUND = 101;
+    const UM_DEC_TRANSFER = 102;
 
     /**
      * 用户余额增加类型
@@ -61,6 +62,7 @@ class AccountLogEnum
     const UM_DEC = [
         self::UM_DEC_ADMIN,
         self::UM_DEC_RECHARGE_REFUND,
+        self::UM_DEC_TRANSFER
     ];
 
 

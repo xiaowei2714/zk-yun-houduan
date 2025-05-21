@@ -51,13 +51,11 @@ class UserLogic extends BaseLogic
         return $user->toArray();
     }
 
-
     /**
-     * @notes 个人信息
-     * @param $userId
+     * 个人信息
+     *
+     * @param int $userId
      * @return array
-     * @author 段誉
-     * @date 2022/9/20 19:45
      */
     public static function info(int $userId)
     {
@@ -69,6 +67,20 @@ class UserLogic extends BaseLogic
         $user['version'] = config('project.version');
         $user->hidden(['password']);
         return $user->toArray();
+    }
+
+    /**
+     * 个人信息
+     *
+     * @param $sn
+     * @return array
+     */
+    public static function infoBySn($sn)
+    {
+        return User::where('sn', '=', $sn)
+            ->field('id,sn,user_money,is_disable')
+            ->findOrEmpty()
+            ->toArray();
     }
 
     /**
