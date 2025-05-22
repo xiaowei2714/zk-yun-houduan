@@ -2,8 +2,10 @@
 
 namespace app\adminapi\logic;
 
+use app\api\logic\NoticeRecordLogic;
 use app\common\model\ConsumeRecharge;
 use app\common\logic\BaseLogic;
+use app\common\model\notice\NoticeRecord;
 use app\common\model\user\User;
 use app\common\model\UserMoneyLog;
 use think\facade\Db;
@@ -103,6 +105,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 $aliasD . 'pay_price',
                 $aliasD . 'user_id',
                 $aliasD . 'recharge_price',
+                $aliasD . 'create_time',
                 'u.p_first_user_id as first_user_id',
                 'u.p_second_user_id as second_user_id',
                 'u.p_three_user_id as three_user_id',
@@ -183,24 +186,26 @@ class ConsumeRechargeLogic extends BaseLogic
             Db::startTrans();
 
             // 流水描述
-            $billDesc = '';
+            $desc = '';
             switch ($info['type']) {
                 case 1:
-                    $billDesc = '话费充值';
+                    $desc = '话费';
                     break;
 
                 case 2:
-                    $billDesc = '电费充值';
+                    $desc = '电费';
                     break;
 
                 case 3:
-                    $billDesc = '话费快充充值';
+                    $desc = '话费快充';
                     break;
 
                 case 4:
-                    $billDesc = '礼品卡充值';
+                    $desc = '礼品卡';
                     break;
             }
+
+            $billDesc = $desc . '充值';
 
             // 返佣第一人
             if (!empty($info['first_user_id']) && !empty($ratioData['first_ratio'])) {
@@ -399,6 +404,26 @@ class ConsumeRechargeLogic extends BaseLogic
                 return false;
             }
 
+            // 消息通知
+            $noticeData = [
+                'user_id' => $info['user_id'],
+                'title' => '订单充值成功提醒',
+                'content' => '您的' . $desc . '订单' .  $info['sn'] . '已于' . date('Y-m-d H:i', strtotime($info['create_time'])) . '充值成功' . $info['recharge_price'],
+                'scene_id' => 0,
+                'read' => 0,
+                'recipient' => 1,
+                'send_type' => 1,
+                'notice_type' => 1,
+                'type' => 1
+            ];
+
+            $res = NoticeRecord::create($noticeData);
+            if (empty($res)) {
+                self::setError('更新成功失败');
+                Db::rollback();
+                return false;
+            }
+
             Db::commit();
             return true;
 
@@ -411,41 +436,12 @@ class ConsumeRechargeLogic extends BaseLogic
     }
 
     /**
-     * 设置为批量成功
-     *
-     * @param $ids
-     * @return bool
-     */
-    public
-    static function setBatchSuccess($ids): bool
-    {
-        try {
-            $data = [
-                'status' => 3,
-                'balances_price' => Db::raw('recharge_price'),
-                'pay_time' => time(),
-                'update_time' => time()
-            ];
-
-            $res = ConsumeRecharge::whereIn('id', $ids)->update($data);
-
-            return !empty($res);
-
-        } catch (Exception $e) {
-            Log::record('Exception: Sql-ConsumeRechargeLogic-setBatchSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
-            self::setError($e->getMessage());
-            return false;
-        }
-    }
-
-    /**
      * 设置为失败
      *
      * @param $id
      * @return bool
      */
-    public
-    static function setFail($id): bool
+    public static function setFail($id): bool
     {
         try {
             Db::startTrans();
@@ -495,6 +491,46 @@ class ConsumeRechargeLogic extends BaseLogic
             $res = ConsumeRecharge::where('id', $id)->update($userAccountData);
             if (empty($res)) {
                 self::setError('更改充值表失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 流水描述
+            $desc = '';
+            switch ($consumeRechargeInfo['type']) {
+                case 1:
+                    $desc = '话费';
+                    break;
+
+                case 2:
+                    $desc = '电费';
+                    break;
+
+                case 3:
+                    $desc = '话费快充';
+                    break;
+
+                case 4:
+                    $desc = '礼品卡';
+                    break;
+            }
+
+            // 消息通知
+            $noticeData = [
+                'user_id' => $consumeRechargeInfo['user_id'],
+                'title' => '订单充值失败提醒',
+                'content' => '您的' . $desc . '订单' .  $consumeRechargeInfo['sn'] . '已于' . date('Y-m-d H:i', strtotime($consumeRechargeInfo['create_time'])) . '充值失败' . $consumeRechargeInfo['recharge_price'],
+                'scene_id' => 0,
+                'read' => 0,
+                'recipient' => 1,
+                'send_type' => 1,
+                'notice_type' => 1,
+                'type' => 1
+            ];
+
+            $res = NoticeRecord::create($noticeData);
+            if (empty($res)) {
+                self::setError('更新成功失败');
                 Db::rollback();
                 return false;
             }

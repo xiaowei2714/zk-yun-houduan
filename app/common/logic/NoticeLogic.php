@@ -16,11 +16,14 @@ namespace app\common\logic;
 
 use app\common\enum\notice\NoticeEnum;
 use app\common\enum\YesNoEnum;
+use app\common\model\Notice;
 use app\common\model\notice\NoticeRecord;
 use app\common\model\notice\NoticeSetting;
 use app\common\model\user\User;
 use app\common\service\sms\SmsMessageService;
-
+use Exception;
+use think\facade\Log;
+use think\Model;
 
 /**
  * 通知逻辑层
@@ -29,6 +32,25 @@ use app\common\service\sms\SmsMessageService;
  */
 class NoticeLogic extends BaseLogic
 {
+    /**
+     * 详情
+     *
+     * @param $type
+     * @return Notice|array|false|Model|null
+     */
+    public static function newestInfo($type)
+    {
+        try {
+            return Notice::field('title,create_time')
+                ->where('type', $type)
+                ->order('id desc')
+                ->find();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-UserAccountLogLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
 
     /**
      * @notes 根据场景发送短信
@@ -135,7 +157,7 @@ class NoticeLogic extends BaseLogic
      * @param $sendType
      * @param $content
      * @param string $extra
-     * @return NoticeRecord|\think\Model
+     * @return NoticeRecord|Model
      * @author 段誉
      * @date 2022/9/15 15:29
      */
