@@ -2,7 +2,6 @@
 
 namespace app\adminapi\logic;
 
-use app\api\logic\NoticeRecordLogic;
 use app\common\model\ConsumeRecharge;
 use app\common\logic\BaseLogic;
 use app\common\model\notice\NoticeRecord;
@@ -430,7 +429,7 @@ class ConsumeRechargeLogic extends BaseLogic
         } catch (Exception $e) {
             self::setError('更新成功异常');
             Log::record('Exception: Sql-ConsumeRechargeLogic-setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
-            self::setError($e->getMessage());
+            Db::rollback();
             return false;
         }
     }

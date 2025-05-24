@@ -6,6 +6,7 @@
 
 namespace app\job;
 
+use app\api\logic\AdOrderLogic;
 use app\common\model\AdOrder;
 use think\queue\Job;
 use think\facade\Log;
@@ -58,22 +59,16 @@ class CancelOrder
                 return true;
             }
 
-            // 开启事务
-            $order->startTrans();
+            $res = AdOrderLogic::cancelOrder($order);
+            if (!$res) {
+                Log::error("订单取消失败: " . AdOrderLogic::getError(), [
+                    'order_id' => $orderId,
+                    'error' => AdOrderLogic::getError()
+                ]);
+            }
 
-            // 更新订单状态
-            $order->status = 5;
-            $order->cancel_type = 1;
-            $order->cancel_time = time();
-            $order->save();
-
-            // 其他关联操作（如库存释放、日志记录等）
-            // ...
-
-            $order->commit();
             return true;
         } catch (\Exception $e) {
-            $order->rollback();
             Log::error("订单取消失败: " . $e->getMessage(), [
                 'order_id' => $orderId,
                 'error' => $e
