@@ -73,6 +73,35 @@ class ConsumeRechargeLogic extends BaseLogic
     /**
      * 数量
      *
+     * @param $mealId
+     * @param $statusArr
+     * @param $startTime
+     * @return false|int
+     */
+    public static function getCountByMealId($mealId, $statusArr = [], $startTime = null)
+    {
+        try {
+            $obj = ConsumeRecharge::where('meal_id', '=', $mealId);
+
+            if (!empty($statusArr)) {
+                $obj = $obj->whereIn('status', $statusArr);
+            }
+
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->count();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-groupCount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
+     * 数量
+     *
      * @param $userId
      * @return array|false
      */
@@ -233,7 +262,7 @@ class ConsumeRechargeLogic extends BaseLogic
             ];
 
             if (isset($params['meal_id'])) {
-                $consumeRechargeData['meal_id'] = $params['recharge_up_price'];
+                $consumeRechargeData['meal_id'] = $params['meal_id'];
             }
             if (isset($params['recharge_up_price'])) {
                 $consumeRechargeData['recharge_up_price'] = $params['recharge_up_price'];

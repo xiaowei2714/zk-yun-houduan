@@ -78,10 +78,16 @@ class UserMealService
             'hava_user_discount' => false,
             'user_discount' => 0,
             'real_discount' => $mealInfo['discount'],
-            'discounted_price' => 0
+            'discounted_price' => 0,
+            'day_astrict_num' => $mealInfo['day_astrict_num'],
+            'meanwhile_order_num' => $mealInfo['meanwhile_order_num'],
+            'operator'  => json_decode($mealInfo['operator'], true),
+            'forbid_buy_city'  => explode(',', $mealInfo['forbid_buy_city']),
+            'allow_buy_nums'  => explode(',', $mealInfo['allow_buy_nums']),
+            'forbid_buy_nums'  => explode(',', $mealInfo['forbid_buy_nums']),
         ];
 
-        $userMealInfo = (new UserMealLogic())->getMealInfo($mealInfo['id'], $userId);
+        $userMealInfo = (new UserMealLogic())->getMealInfo($userId, $mealInfo['id']);
         if (!empty($userMealInfo->id)) {
             $data['hava_user_discount'] = true;
             $data['user_discount'] = $userMealInfo->discount;

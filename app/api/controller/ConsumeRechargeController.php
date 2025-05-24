@@ -423,11 +423,67 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('充值折扣发生变化，请重新进入充值页面');
         }
 
+        // 话费号段验证
+        if ($newParams['type'] == 1 || $newParams['type'] == 3) {
+            if (!empty($mealInfo['allow_buy_nums'])) {
+                $findRes = false;
+                foreach ($mealInfo['allow_buy_nums'] as $value) {
+                    if (strpos($newParams['account'], $value) !== 0) {
+                        continue;
+                    }
+
+                    $findRes = true;
+                    break;
+                }
+
+                if (!$findRes) {
+                    return $this->fail('不允许下单号段');
+                }
+            }
+
+            if (!empty($mealInfo['forbid_buy_nums'])) {
+                foreach ($mealInfo['forbid_buy_nums'] as $value) {
+                    if (strpos($newParams['account'], $value) !== 0) {
+                        continue;
+                    }
+
+                    return $this->fail('不支持下单号段');
+                }
+            }
+        }
+
+        // 电费验证城市
+        if ($newParams['type'] == 2) {
+            $areaData = Config::get('project.area');
+            if (empty($areaData[$newParams['name_area']])) {
+                return $this->fail('不支持的地区充值');
+            }
+
+            if (!empty($mealInfo['forbid_buy_city']) && in_array($areaData[$newParams['name_area']], $mealInfo['forbid_buy_city'])) {
+                return $this->fail('暂不支持的地区充值');
+            }
+        }
+
         $newParams['pay_price'] = $mealInfo['discounted_price'];
 
         // 比较用户余额
         if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
             return $this->fail('余额不足，请前往充值页面进行充值');
+        }
+
+        $statusArr = [1, 2, 3];
+        $num = ConsumeRechargeLogic::getCountByMealId($newParams['meal_id'], $statusArr);
+        $num += 1;
+        if (bccomp($mealInfo['day_astrict_num'], $num) < 0) {
+            return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
+        }
+
+        $statusArr = [1, 2];
+        $today = strtotime(date('Y-m-d 00:00:00'));
+        $num = ConsumeRechargeLogic::getCountByMealId($newParams['meal_id'], $statusArr, $today);
+        $num += 1;
+        if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
+            return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
         }
 
         if ($newParams['type'] == 1 || $newParams['type'] == 3) {
@@ -439,6 +495,9 @@ class ConsumeRechargeController extends BaseApiController
             }
             if (!$requestData['is_success']) {
                 return $this->fail(!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的手机号充值');
+            }
+            if (!empty($mealInfo['operator']) && !in_array($requestData['isp'], $mealInfo['operator'])) {
+                return $this->fail('暂不支持的运营商充值');
             }
 
             $newParams['recharge_up_price'] = $requestData['cur_fee'];
@@ -630,6 +689,11 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('当前用户账号异常，请联系客服');
         }
 
+        // 批量数据
+        $batchData = explode(PHP_EOL, $params['batch_data']);
+        $dataNum = count($batchData);
+        $areaData = array_flip(Config::get('project.area'));
+
         // 获取汇率
         $rate = ConfigService::get('website', 'reference_rate', '');
         if (empty($rate)) {
@@ -648,23 +712,94 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('充值折扣发生变化，请重新进入充值页面');
         }
 
-        // 批量数据
-        $batchData = explode(PHP_EOL, $params['batch_data']);
+        // 话费号段验证
+        foreach ($batchData as $value) {
+            $tmpData = explode(' ', $value);
+            if (empty($tmpData[0])) {
+                return $this->fail($value . ' 请正确输入手机号');
+            }
+
+            $account = $tmpData[0];
+            $name = $tmpData[1] ?? '';
+
+            if ($params['type'] == 1 || $params['type'] == 3) {
+                if (!preg_match("/^1[3456789]\d{9}$/", $account)) {
+                    return $this->fail($value . ' 请正确输入手机号');
+                }
+                if (mb_strlen($name) > 30) {
+                    return $this->fail($value . ' 机主姓名不能超过30个字符');
+                }
+
+                if (!empty($mealInfo['allow_buy_nums'])) {
+                    $findRes = false;
+                    foreach ($mealInfo['allow_buy_nums'] as $bValue) {
+                        if (strpos($account, $bValue) !== 0) {
+                            continue;
+                        }
+
+                        $findRes = true;
+                        break;
+                    }
+
+                    if (!$findRes) {
+                        return $this->fail($value . '不允许下单号段');
+                    }
+                }
+
+                if (!empty($mealInfo['forbid_buy_nums'])) {
+                    foreach ($mealInfo['forbid_buy_nums'] as $bValue) {
+                        if (strpos($account, $bValue) !== 0) {
+                            continue;
+                        }
+
+                        return $this->fail($value . '不支持下单号段');
+                    }
+                }
+
+            } elseif ($params['type'] == 2) {
+                if (strlen($account) > 30) {
+                    return $this->fail($value . ' 户号不能超过30个字符');
+                }
+                if (mb_strlen($name) > 30) {
+                    return $this->fail($value . ' 区域不能超过30个字符');
+                }
+                if (!isset($areaData[$name])) {
+                    return $this->fail($value . ' 不支持的区域');
+                }
+                if (!empty($mealInfo['forbid_buy_city']) && in_array($areaData[$name], $mealInfo['forbid_buy_city'])) {
+                    return $this->fail($value . ' 暂不支持的地区充值');
+                }
+            }
+        }
 
         // 比较用户余额
-        $total = bcmul($mealInfo['discounted_price'], count($batchData), 2);
+        $total = bcmul($mealInfo['discounted_price'], $dataNum, 2);
         if (bccomp($userInfo['user_money'], $total, 2) < 0) {
             return $this->fail('余额不足，请前往充值页面进行充值');
         }
 
-        $areaData = array_flip(Config::get('project.area'));
+        $statusArr = [1, 2, 3];
+        $num = ConsumeRechargeLogic::getCountByMealId($params['meal_id'], $statusArr);
+        $num += $dataNum;
+        if (bccomp($mealInfo['day_astrict_num'], $num) < 0) {
+            return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
+        }
+
+        $statusArr = [1, 2];
+        $today = strtotime(date('Y-m-d 00:00:00'));
+        $num = ConsumeRechargeLogic::getCountByMealId($params['meal_id'], $statusArr, $today);
+        $num += $dataNum;
+        if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
+            return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
+        }
 
         $msg = '';
         $haveFail = false;
         foreach ($batchData as $value) {
             $tmpData = explode(' ', $value);
             if (empty($tmpData[0])) {
-                return $this->fail('请正确输入号码');
+                $msg .= $value . ' 请正确输入手机号' . PHP_EOL;
+                continue;
             }
 
             $tmpParams = [
@@ -684,22 +819,20 @@ class ConsumeRechargeController extends BaseApiController
             $name = $tmpData[1] ?? '';
 
             if ($params['type'] == 1 || $params['type'] == 3) {
-                if (!preg_match("/^1[3456789]\d{9}$/", $tmpParams['account'])) {
-                    $msg .= $value . ' 请正确输入手机号' . PHP_EOL;
-                    continue;
-                }
-                if (mb_strlen($name) > 30) {
-                    $msg .= $value . ' 机主姓名不能超过30个字符' . PHP_EOL;
-                    continue;
-                }
 
                 // 获取实时话费余额
                 $requestData = (new ConsumeRechargeService())->getPhoneBalance($tmpParams['account']);
                 if (empty($requestData)) {
                     $msg .= $value . ' 暂不支持的手机号充值' . PHP_EOL;
+                    continue;
                 }
                 if (!$requestData['is_success']) {
                     $msg .= $value . (!empty($requestData['msg']) ? $requestData['msg'] : '暂不支持的手机号充值') . PHP_EOL;
+                    continue;
+                }
+                if (!empty($mealInfo['operator']) && !in_array($requestData['isp'], $mealInfo['operator'])) {
+                    $msg .= $value . ' 暂不支持的运营商充值' . PHP_EOL;
+                    continue;
                 }
 
                 $tmpParams['name_area'] = $name;
@@ -707,18 +840,6 @@ class ConsumeRechargeController extends BaseApiController
                 $tmpParams['recharge_up_price'] = $requestData['cur_fee'];
 
             } elseif ($params['type'] == 2) {
-                if (strlen($tmpParams['account']) > 30) {
-                    $msg .= $value . ' 户号不能超过30个字符' . PHP_EOL;
-                    continue;
-                }
-                if (mb_strlen($name) > 30) {
-                    $msg .= $value . ' 区域不能超过30个字符' . PHP_EOL;
-                    continue;
-                }
-                if (!isset($areaData[$name])) {
-                    $msg .= $value . ' 不支持的区域' . PHP_EOL;
-                    continue;
-                }
 
                 $tmpParams['name_area'] = $areaData[$name];
 
