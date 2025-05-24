@@ -84,7 +84,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 'status',
                 'count(*) as cou'
             ])
-            ->where('user_id', '=', $userId)
+                ->where('user_id', '=', $userId)
                 ->whereIn('status', [2, 3, 4])
                 ->group(['type', 'status'])
                 ->select()
@@ -92,6 +92,38 @@ class ConsumeRechargeLogic extends BaseLogic
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeRechargeLogic-groupCount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
+     * 总金额
+     *
+     * @param $userId
+     * @param null $startTime
+     * @return array|false
+     */
+    public static function groupSumMoney($userId, $startTime = null)
+    {
+        try {
+            $obj = ConsumeRecharge::field([
+                'type',
+                'sum(`pay_price`) as pay_price'
+            ])
+                ->where('user_id', '=', $userId)
+                ->where('status', '=', 3)
+                ->whereIn('type', [1, 2]);
+
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->group(['type'])
+                ->select()
+                ->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-groupSumMoney Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return false;
         }
     }

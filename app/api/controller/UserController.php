@@ -14,6 +14,8 @@
 namespace app\api\controller;
 
 
+use app\api\logic\ConsumeQueryLogic;
+use app\api\logic\ConsumeRechargeLogic;
 use app\api\logic\MealLogic;
 use app\api\logic\SubstationLogic;
 use app\api\logic\UserLogic;
@@ -160,61 +162,60 @@ class UserController extends BaseApiController
     }
 
     /**
-     * 获取好友列表
-     *
      * @return Json
      */
-//    public function getFriendList(): Json
-//    {
-//        $type = $this->request->get('type');
-//
-//        // 获取今日收益
-//        $startTime = strtotime(date('Y-m-d 00:00:00'));
-//        $endTime = strtotime(date('Y-m-d 23:59:59'));
-//
-//        $todayTotal = 0;
-//        $total = 0;
-//
-//        $where = [];
-//        if ($type == 0) {
-//            $where[] = ['p_first_user_id', '=', $this->userId];
-//        } else if ($type == 1) {
-//            $where[] = ['p_second_user_id', '=', $this->userId];
-//        } else if ($type == 2) {
-//            $where[] = ['p_three_user_id', '=', $this->userId];
-//        } else {
-//            return $this->fail('参数异常');
-//        }
-//
-//        $list = User::where($where)
-//            ->field('id,avatar,nickname,create_time')
-//            ->select()
-//            ->toArray();
-//        $ids = User::where($where)
-//            ->column('id');
-//
-//        $idString = implode(',', $ids);
-//        foreach ($list as &$v) {
-//            $xjTodayTotal = UserMoneyLog::where(['change_type' => 1, 'type' => 3])
-//                ->where('id', 'in', $idString)
-//                ->whereBetween('create_time', [$startTime, $endTime])
-//                ->sum('change_money');
-//            $xjTotal = UserMoneyLog::where(['change_type' => 1, 'type' => 3])
-//                ->where('id', 'in', $idString)
-//                ->sum('change_money');
-//            $v['xjTodayTotal'] = $xjTodayTotal;
-//            $v['xjTotal'] = $xjTotal;
-//            $v['avatar'] = FileService::getFileUrl($v['avatar']);
-//            $todayTotal += $xjTodayTotal;
-//            $total += $xjTotal;
-//        }
-//
-//        return $this->success('', [
-//            'list' => $list,
-//            'todayTotal' => $todayTotal,
-//            'total' => $total
-//        ]);
-//    }
+    public function countMoney(): Json
+    {
+        try {
+            $newData = [
+                'user_money' => 0,
+                'phone_today_money' => 0,
+                'phone_money' => 0,
+                'electricity_today_money' => 0,
+                'electricity_money' => 0,
+                'query_today_money' => 0,
+                'query_money' => 0,
+                'next_today_money' => 0,
+                'next_money' => 0,
+            ];
+
+            // 用户详情
+            $userInfo = UserLogic::info($this->userId);
+            $newData['user_money'] = number_format($userInfo['user_money'] ?? 0,2);
+            $newData['next_money'] = number_format( $userInfo['total_award_price'] ?? 0,2);
+
+            // 话费、电费 总数
+            $rechargeData = ConsumeRechargeLogic::groupSumMoney($this->userId);
+            $rechargeData = array_column($rechargeData, 'pay_price', 'type');
+            $newData['phone_money'] = number_format($rechargeData[1] ?? 0,2);
+            $newData['electricity_money'] = number_format( $rechargeData[2] ?? 0,2);
+
+            $today = strtotime(date('Y-m-d 00:00:00'));
+
+            // 话费、电费 当天
+            $rechargeData = ConsumeRechargeLogic::groupSumMoney($this->userId, $today);
+            $rechargeData = array_column($rechargeData, 'pay_price', 'type');
+            $newData['phone_today_money'] = number_format($rechargeData[1] ?? 0,2);
+            $newData['electricity_today_money'] = number_format( $rechargeData[2] ?? 0,2);
+
+            // 查询
+            $querySum = ConsumeQueryLogic::groupSumMoney($this->userId);
+            $newData['query_money'] = number_format($querySum,2);
+
+            $querySum = ConsumeQueryLogic::groupSumMoney($this->userId, $today);
+            $newData['query_today_money'] = number_format($querySum,2);
+
+            // 返佣
+            $cashbackSum = UserMoneyLogLogic::getUserCashback($this->userId, $today);
+            $newData['next_today_money'] = number_format($cashbackSum,2);
+
+            return $this->success('', $newData);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-UserController-getCount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
 
     /**
      * 获取好友列表

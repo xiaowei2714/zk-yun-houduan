@@ -38,8 +38,6 @@ use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use think\facade\Config;
 use think\facade\Db;
-use think\facade\Queue;
-use think\facade\Log;
 use think\response\Json;
 
 /**
@@ -625,9 +623,16 @@ class IndexController extends BaseApiController
     public function getIndexConfig()
     {
         $notice = Notice::where(['type' => 1])->select()->toArray();
+
+        $discount = ConfigService::get('website', 'card_discount', '');
+        if (empty($discount) || $discount >= 10 || $discount <= 0) {
+            $discount = '';
+        }
+
         return $this->success('', [
             'shop_name' => ConfigService::get('website', 'shop_name'),
             'index_banner' => FileService::getFileUrl(ConfigService::get('website', 'index_banner')),
+            'card_discount' => $discount,
             'notice' => $notice
         ]);
     }

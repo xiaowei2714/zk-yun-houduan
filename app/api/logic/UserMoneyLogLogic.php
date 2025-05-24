@@ -3,11 +3,7 @@
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
-use app\common\model\ConsumeRecharge;
-use app\common\model\user\User;
-use app\common\model\user\UserAccountLog;
 use app\common\model\UserMoneyLog;
-use think\facade\Db;
 use think\facade\Log;
 use Exception;
 
@@ -52,6 +48,32 @@ class UserMoneyLogLogic extends BaseLogic
             return $obj->group(['n_user_id'])
                 ->select()
                 ->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-UserMoneyLogLogic-List Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
+     * 获取用户返佣金额
+     *
+     * @param $userId
+     * @param $startTime
+     * @return false|float
+     */
+    public static function getUserCashback($userId, $startTime = null)
+    {
+        try {
+
+            $obj = UserMoneyLog::where('user_id', '=', $userId)
+                ->where('type', '=', 3);
+
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->sum('change_money');
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-UserMoneyLogLogic-List Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());

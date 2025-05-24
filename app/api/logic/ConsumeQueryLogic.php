@@ -54,33 +54,6 @@ class ConsumeQueryLogic extends BaseLogic
     }
 
     /**
-     * 详情
-     *
-     * @param $id
-     * @return ConsumeQuery|array|false|Model|null
-     */
-    public static function info($id)
-    {
-        try {
-            return ConsumeQuery::field([
-                'user_id',
-                'account',
-                'account_type',
-                'area',
-                'balance',
-                'pay_price',
-                'create_time'
-            ])
-                ->where('id', '=', $id)
-                ->find();
-
-        } catch (Exception $e) {
-            Log::record('Exception: Sql-ConsumeQueryLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
-            return false;
-        }
-    }
-
-    /**
      * 列表
      *
      * @param $userId
@@ -135,6 +108,57 @@ class ConsumeQueryLogic extends BaseLogic
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeQueryLogic-listByAccount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
+     * 总金额
+     *
+     * @param $userId
+     * @param $startTime
+     * @return false|float
+     */
+    public static function groupSumMoney($userId, $startTime = null)
+    {
+        try {
+            $obj = ConsumeQuery::where('user_id', '=', $userId);
+
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->sum('pay_price');
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-groupSumMoney Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
+     * 详情
+     *
+     * @param $id
+     * @return ConsumeQuery|array|false|Model|null
+     */
+    public static function info($id)
+    {
+        try {
+            return ConsumeQuery::field([
+                'user_id',
+                'account',
+                'account_type',
+                'area',
+                'balance',
+                'pay_price',
+                'create_time'
+            ])
+                ->where('id', '=', $id)
+                ->find();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeQueryLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return false;
         }
     }
