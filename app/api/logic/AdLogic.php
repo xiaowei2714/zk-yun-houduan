@@ -22,15 +22,15 @@ class AdLogic extends BaseLogic
     /**
      * 列表
      *
-     * @param $type
-     * @return array|false
+     * @param array $params
+     * @return bool|array
      */
-    public static function list($type): bool|array
+    public static function list(array $params): bool|array
     {
         try {
             $alias = 'ua';
             $aliasD = $alias . '.';
-            return UserAd::field([
+            $obj = UserAd::field([
                 $aliasD . 'id',
                 $aliasD . 'user_id',
                 $aliasD . 'num',
@@ -42,13 +42,17 @@ class AdLogic extends BaseLogic
                 $aliasD . 'pay_type',
                 $aliasD . 'type',
                 'u.nickname',
-            ])
-                ->alias($alias)
+            ])->alias($alias)
                 ->leftJoin('user u', $aliasD . 'user_id = u.id')
-                ->where($aliasD . 'type', '=', $type)
-                ->where($aliasD . 'status', '=', 2)
-                ->order($aliasD . 'id desc')
-                ->limit(100)
+                ->where($aliasD . 'type', '=', $params['type'])
+                ->where($aliasD . 'status', '=', 2);
+
+            if (!empty($params['last_id'])) {
+                $obj = $obj->where($aliasD . 'id', '<', $params['last_id']);
+            }
+
+            return $obj->order($aliasD . 'id desc')
+                ->limit($params['limit'])
                 ->select()
                 ->toArray();
 
@@ -60,10 +64,10 @@ class AdLogic extends BaseLogic
     }
 
     /**
-     * @param $userId
-     * @return false
+     * @param array $params
+     * @return mixed
      */
-    public static function listByUser($userId)
+    public static function listByUser(array $params)
     {
         try {
             $tablePre = env('database.prefix');
@@ -72,6 +76,14 @@ class AdLogic extends BaseLogic
 
             $alias = 'ua';
             $aliasD = $alias . '.';
+
+            $userIdParams = $params['user_id'];
+            $limitParams = $params['limit'];
+
+            $where = '';
+            if (!empty($params['last_id'])) {
+                $where = "AND $aliasD`id` <= " . $params['last_id'];
+            }
 
             $sql = <<< EOT
 SELECT
@@ -94,11 +106,12 @@ SELECT
     FROM
 	    `$adTable` AS $alias
     WHERE
-        $aliasD`user_id` = $userId
+        $aliasD`user_id` = $userIdParams
         AND $aliasD`delete_time` is null
+        $where
     ORDER BY
         $aliasD`id` DESC 
-        LIMIT 0, 100
+        LIMIT $limitParams
 EOT;
 
             return Db::query($sql);

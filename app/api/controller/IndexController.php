@@ -96,6 +96,7 @@ class IndexController extends BaseApiController
         $type = $this->request->get('type');
         $date_type = $this->request->get('date_type');
         $date = $this->request->get('date');
+        $lastId = $this->request->get('last_id');
 
         $where = [];
         $where[] = ['user_id', '=', $this->userId];
@@ -124,24 +125,28 @@ class IndexController extends BaseApiController
             }
         }
 
-//        $listQuery2 = $listQuery;
-//        $listQuery3 = $listQuery;
+        $listQuery2 = $listQuery;
+        $listQuery3 = $listQuery;
 
-        $list = $listQuery->order('id', 'desc')->select()->toArray();
+        $limit = 10;
 
-        $shouru = 0;
-        $zhichu = 0;
-        foreach ($list as $item) {
-            if ($item['change_type'] == 1) {
-                $shouru += $item['change_money'];
-            }
-            if ($item['change_type'] == 2) {
-                $zhichu += $item['change_money'];
-            }
+        if (!empty($lastId)) {
+            $listQuery = $listQuery->where('id', '<', $lastId);
         }
+
+        $list = $listQuery->order('id', 'desc')->limit($limit)->select()->toArray();
+
+        $lastId = '';
+        foreach ($list as $value) {
+            $lastId = $value['id'];
+        }
+
+        $shouru = $listQuery2->where('change_type', '=', 1)->sum('change_money');
+        $zhichu = $listQuery3->where('change_type', '=', 2)->sum('change_money');
 
         return $this->success('', [
             'list' => $list,
+            'last_id' => (!empty($list) && count($list) == $limit) ? $lastId : '',
             'shouru' => number_format($shouru, 2),
             'zhichu' => number_format($zhichu, 2),
         ]);

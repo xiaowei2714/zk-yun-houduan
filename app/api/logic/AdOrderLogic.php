@@ -87,7 +87,7 @@ class AdOrderLogic extends BaseLogic
      * @param $search
      * @return array|false
      */
-    public static function list($userId, $status = '', $search = '')
+    public static function list(array $params)
     {
         try {
             $alias = 'ao';
@@ -109,22 +109,26 @@ class AdOrderLogic extends BaseLogic
             ])->alias($alias)
                 ->leftJoin('user u', $aliasD . 'to_user_id = u.id')
                 ->leftJoin('user uu', $aliasD . 'user_id = uu.id')
-                ->where('user_id|to_user_id', '=', $userId);
+                ->where('user_id|to_user_id', '=', $params['user_id']);
 
-            if (!empty($status)) {
-                if ($status != 3) {
-                    $obj = $obj->where($aliasD . 'status', '=', $status);
+            if (!empty($params['status'])) {
+                if ($params['status'] != 3) {
+                    $obj = $obj->where($aliasD . 'status', '=', $params['status']);
                 } else {
                     $obj = $obj->where($aliasD . 'appeal', '=', 1);
                 }
             }
 
-            if (!empty($search)) {
-                $obj = $obj->where($aliasD . 'oder_no', 'like', '%' . $search . '%');
+            if (!empty($params['search'])) {
+                $obj = $obj->where($aliasD . 'oder_no', 'like', '%' . $params['search'] . '%');
+            }
+
+            if (!empty($params['last_id'])) {
+                $obj = $obj->where($aliasD . 'id', '<', $params['last_id']);
             }
 
             return $obj->order($aliasD . 'id desc')
-                ->limit(10)
+                ->limit($params['limit'])
                 ->select()
                 ->toArray();
 

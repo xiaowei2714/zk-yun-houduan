@@ -56,23 +56,27 @@ class ConsumeQueryLogic extends BaseLogic
     /**
      * 列表
      *
-     * @param $userId
-     * @param $type
-     * @return array|false
+     * @param array $params
+     * @return bool|array
      */
-    public static function listByUser($userId, $type): bool|array
+    public static function listByUser(array $params): bool|array
     {
         try {
-            return ConsumeQuery::field([
+            $obj = ConsumeQuery::field([
+                'id',
                 'account',
                 'account_type',
                 'area',
                 'balance'
-            ])
-                ->where('user_id', '=', $userId)
-                ->where('type', '=', $type)
-                ->order('id desc')
-                ->limit(100)
+            ])->where('user_id', '=', $params['user_id'])
+                ->where('type', '=', $params['type']);
+
+            if (!empty($params['last_id'])) {
+                $obj = $obj->where('id', '<', $params['last_id']);
+            }
+
+            return $obj->order('id desc')
+                ->limit($params['limit'])
                 ->select()
                 ->toArray();
 
@@ -85,24 +89,27 @@ class ConsumeQueryLogic extends BaseLogic
     /**
      * 列表
      *
-     * @param $userId
-     * @param $type
-     * @param $account
-     * @return array|false
+     * @param array $params
+     * @return bool|array
      */
-    public static function listByAccount($userId, $type, $account): bool|array
+    public static function listByAccount(array $params): bool|array
     {
         try {
-            return ConsumeQuery::field([
+            $obj = ConsumeQuery::field([
                 'id',
                 'balance',
                 'create_time'
             ])
-                ->where('user_id', '=', $userId)
-                ->where('account', '=', $account)
-                ->where('type', '=', $type)
-                ->order('id desc')
-                ->limit(100)
+                ->where('user_id', '=', $params['user_id'])
+                ->where('account', '=', $params['number'])
+                ->where('type', '=', $params['type']);
+
+            if (!empty($params['last_id'])) {
+                $obj = $obj->where('id', '<', $params['last_id']);
+            }
+
+            return $obj->order('id desc')
+                ->limit($params['limit'])
                 ->select()
                 ->toArray();
 

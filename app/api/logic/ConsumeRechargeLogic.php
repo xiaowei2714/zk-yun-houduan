@@ -28,7 +28,7 @@ class ConsumeRechargeLogic extends BaseLogic
      * @param $search
      * @return array|false
      */
-    public static function list($userId, $type, $status, $search)
+    public static function list(array $params)
     {
         try {
             $obj = ConsumeRecharge::field([
@@ -48,19 +48,23 @@ class ConsumeRechargeLogic extends BaseLogic
                 'pay_time',
                 'create_time'
             ])
-                ->where('user_id', '=', $userId)
-                ->where('type', '=', $type);
+                ->where('user_id', '=', $params['user_id'])
+                ->where('type', '=', $params['type']);
 
-            if ($status !== null && $status !== '') {
-                $obj = $obj->where('status', '=', $status);
+            if ($params['status'] !== null && $params['status'] !== '') {
+                $obj = $obj->where('status', '=', $params['status'] );
             }
 
-            if ($search !== null && $search !== '') {
-                $obj = $obj->where('account|sn', 'like', '%' . $search . '%');
+            if ($params['search'] !== null && $params['search']  !== '') {
+                $obj = $obj->where('account|sn', 'like', '%' . $params['search']  . '%');
+            }
+
+            if (!empty($params['last_id'])) {
+                $obj = $obj->where('id', '<', $params['last_id']);
             }
 
             return $obj->order('id desc')
-                ->limit(30)
+                ->limit($params['limit'])
                 ->select()
                 ->toArray();
 

@@ -36,21 +36,31 @@ class ConsumeRechargeController extends BaseApiController
         ]);
 
         try {
+
+            $newParams = [
+                'user_id' => $this->userId,
+                'type' => null,
+                'status' => null,
+                'search' => $params['search'] ?? '',
+                'last_id' => !empty($params['last_id']) ? $params['last_id'] : '',
+                'limit' => 10
+            ];
+
             switch ($params['type']) {
                 case 'mobile':
-                    $type = 1;
+                    $newParams['type'] = 1;
                     break;
 
                 case 'electricity':
-                    $type = 2;
+                    $newParams['type'] = 2;
                     break;
 
                 case 'quickly':
-                    $type = 3;
+                    $newParams['type'] = 3;
                     break;
 
                 case 'card':
-                    $type = 4;
+                    $newParams['type'] = 4;
                     break;
 
                 default:
@@ -60,26 +70,24 @@ class ConsumeRechargeController extends BaseApiController
             $statusParams = $params['status'] ?? '';
             switch ($statusParams) {
                 case 0:
-                    $status = null;
+                    $newParams['status'] = null;
                     break;
 
                 case 1:
-                    $status = 2;
+                    $newParams['status'] = 2;
                     break;
 
                 case 2:
-                    $status = 3;
+                    $newParams['status'] = 3;
                     break;
 
                 case 3:
-                    $status = 4;
+                    $newParams['status'] = 4;
                     break;
 
                 default:
                     return $this->fail('参数异常');
             }
-
-            $search = $params['search'] ?? '';
 
             // 用户详情
             $userInfo = UserLogic::info($this->userId);
@@ -90,7 +98,7 @@ class ConsumeRechargeController extends BaseApiController
                 return $this->fail('当前用户账号异常，请联系客服');
             }
 
-            $list = ConsumeRechargeLogic::list($this->userId, $type, $status, $search);
+            $list = ConsumeRechargeLogic::list($newParams);
             if ($list === false) {
                 return $this->fail('系统异常，请联系客服');
             }
@@ -98,8 +106,8 @@ class ConsumeRechargeController extends BaseApiController
             $areaData = Config::get('project.area');
 
             $newData = [];
+            $lastId = '';
             foreach ($list as $value) {
-
                 $accountShow = $value['account'];
                 $accountNameShow = '';
                 if ($value['type'] == 1 || $value['type'] == 3) {
@@ -142,6 +150,7 @@ class ConsumeRechargeController extends BaseApiController
                 ];
 
                 $newData[] = $tmpData;
+                $lastId = $value['id'];
             }
 
             $queryPhonePrice = WebSettingLogic::getQueryPhone();
@@ -149,6 +158,7 @@ class ConsumeRechargeController extends BaseApiController
 
             return $this->data([
                 'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
                 'query_p' => $queryPhonePrice,
                 'query_e' => $queryElectricityPrice
             ]);

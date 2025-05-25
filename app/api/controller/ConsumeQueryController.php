@@ -478,9 +478,16 @@ class ConsumeQueryController extends BaseApiController
                 return $this->fail('当前用户账号异常，请联系客服');
             }
 
-            $data = ConsumeQueryLogic::listByUser($this->userId, $params['type']);
+            $newParams = [
+                'user_id' => $this->userId,
+                'type' => $params['type'],
+                'last_id' => !empty($params['last_id']) ? $params['last_id'] : '',
+                'limit' => 15
+            ];
+            $data = ConsumeQueryLogic::listByUser($newParams);
 
             $newData = [];
+            $lastId = '';
             if (!empty($data)) {
                 $operatorData = Config::get('project.operator');
                 $areaData = Config::get('project.area');
@@ -498,11 +505,13 @@ class ConsumeQueryController extends BaseApiController
                     }
 
                     $newData[] = $tmpData;
+                    $lastId = $value['id'];
                 }
             }
 
             return $this->data([
-                'list' => $newData
+                'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
             ]);
 
         } catch (Exception $e) {
@@ -533,24 +542,32 @@ class ConsumeQueryController extends BaseApiController
                 return $this->fail('当前用户账号异常，请联系客服');
             }
 
-            $data = ConsumeQueryLogic::listByAccount($this->userId, $params['type'], $params['number']);
+            $newParams = [
+                'user_id' => $this->userId,
+                'type' => $params['type'],
+                'number' => $params['number'],
+                'last_id' => !empty($params['last_id']) ? $params['last_id'] : '',
+                'limit' => 15
+            ];
+            $data = ConsumeQueryLogic::listByAccount($newParams);
 
             $number = '';
             $isp = '';
             $area = '';
             $balance = 0;
             $newData = [];
+            $lastId = '';
             if (!empty($data)) {
                 foreach ($data as $value) {
                     $newData[] = [
                         'balance' => $value['balance'],
                         'time' => date('Y-m-d H:i', strtotime($value['create_time']))
                     ];
+
+                    $lastId = $value['id'];
                 }
 
                 $operatorData = Config::get('project.operator');
-                $areaData = Config::get('project.area');
-
                 $firstData = array_pop($data);
                 $info = ConsumeQueryLogic::info($firstData['id']);
                 $number = $info['account'];
@@ -564,7 +581,8 @@ class ConsumeQueryController extends BaseApiController
                 'isp' => $isp,
                 'area' => $area,
                 'balance' => $balance,
-                'list' => $newData
+                'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
             ]);
 
         } catch (Exception $e) {

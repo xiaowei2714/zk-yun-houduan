@@ -126,12 +126,20 @@ class NoticeController extends BaseApiController
 
         try {
 
-            $list = NoticeRecordLogic::listByUser($params['user_id'], $params['type']);
+            $newParams = [
+                'user_id' => $this->userId,
+                'type' => $params['type'],
+                'last_id' => !empty($params['last_id']) ? $params['last_id'] : '',
+                'limit' => 10
+            ];
+
+            $list = NoticeRecordLogic::listByUser($newParams);
             if ($list === false) {
                 return $this->fail('系统异常，请联系客服');
             }
 
             $newData = [];
+            $lastId = '';
             foreach ($list as $value) {
                 $tmpData = [
                     'id' => $value['id'],
@@ -142,9 +150,13 @@ class NoticeController extends BaseApiController
                 ];
 
                 $newData[] = $tmpData;
+                $lastId = $value['id'];
             }
 
-            return $this->data($newData);
+            return $this->data([
+                'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
+            ]);
 
         } catch (Exception $e) {
             Log::record('Exception: api-NoticeController-listByUser Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());

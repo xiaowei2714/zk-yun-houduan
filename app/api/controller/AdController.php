@@ -31,14 +31,22 @@ class AdController extends BaseApiController
 
         try {
             $params['type'] = $params['type'] == 1 ? 2 : 1;
-            $list = AdLogic::list($params['type']);
+
+            $newParams = [
+                'type' => $params['type'],
+                'last_id' => !empty($params['last_id']) ? $params['last_id'] : '',
+                'limit' => 10
+            ];
+            $list = AdLogic::list($newParams);
             if ($list === false) {
                 return $this->fail('获取数据异常');
             }
 
-            $newData = [];
             if (empty($list)) {
-                return $this->success('', $newData);
+                return $this->success('', [
+                    'list' => [],
+                    'last_id' => '',
+                ]);
             }
 
             $userIds = array_unique(array_column($list, 'id'));
@@ -47,6 +55,8 @@ class AdController extends BaseApiController
             $completeData = AdOrderLogic::getCountData($userIds, 4);
             $completeData = array_column($completeData, 'cou', 'ad_id');
 
+            $lastId = '';
+            $newData = [];
             foreach ($list as $value) {
 
                 $sCou = $completeData[$value['id']] ?? 0;
@@ -66,9 +76,14 @@ class AdController extends BaseApiController
                     's_cou' => $sCou,
                     'rate' => $sCou > 0 ? bcmul(bcdiv($sCou, $cou, 4), 100, 2) : 0
                 ];
+
+                $lastId = $value['id'];
             }
 
-            return $this->success('', $newData);
+            return $this->success('', [
+                'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
+            ]);
 
         } catch (Exception $e) {
             Log::record('Exception: api-AdController-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
@@ -84,16 +99,25 @@ class AdController extends BaseApiController
     public function mList(): Json
     {
         try {
-            $list = AdLogic::listByUser($this->userId);
+            $newParams = [
+                'user_id' => $this->userId,
+                'last_id' => !empty($params['last_id']) ? $params['last_id'] : '',
+                'limit' => 10
+            ];
+            $list = AdLogic::listByUser($newParams);
             if ($list === false) {
                 return $this->fail('获取数据异常');
             }
 
-            $newData = [];
             if (empty($list)) {
-                return $this->success('', $newData);
+                return $this->success('', [
+                    'list' => [],
+                    'last_id' => '',
+                ]);
             }
 
+            $lastId = '';
+            $newData = [];
             foreach ($list as $value) {
                 $nickname = $this->userInfo['nickname'] ?? '';
 
@@ -112,9 +136,14 @@ class AdController extends BaseApiController
                     's_count' => $value['s_cou'],
                     'rate' => $value['cou'] > 0 ? bcmul(bcdiv($value['s_cou'], $value['cou'], 4), 100, 2) : 0,
                 ];
+
+                $lastId = $value['id'];
             }
 
-            return $this->success('', $newData);
+            return $this->success('', [
+                'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
+            ]);
 
         } catch (Exception $e) {
             Log::record('Exception: api-AdController-mList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
@@ -338,6 +367,7 @@ class AdController extends BaseApiController
 
             $search = (string)$this->request->get('search');
             $status = (int)$this->request->get('status');
+            $lastId = (int)$this->request->get('last_id');
             if ($status < 0 || $status > 5) {
                 $status = 0;
             }
@@ -345,13 +375,22 @@ class AdController extends BaseApiController
                 return $this->fail('搜索数据过长');
             }
 
+            $newParams = [
+                'user_id' => $this->userId,
+                'status' => $status,
+                'search' => $search,
+                'last_id' => !empty($lastId) ? $lastId : '',
+                'limit' => 10
+            ];
+
             // 广告订单列表
-            $list = AdOrderLogic::list($this->userId, $status, $search);
+            $list = AdOrderLogic::list($newParams);
             if ($list === false) {
                 return $this->fail(AdOrderLogic::getError());
             }
 
             $newData = [];
+            $lastId = '';
             foreach ($list as $value) {
                 $isBuy = $value['user_id'] == $this->userId;
                 $newData[] = [
@@ -368,9 +407,14 @@ class AdController extends BaseApiController
                     'is_buy' => $isBuy,
                     'nickname' => $isBuy ? $value['sell_nickname'] : $value['buy_nickname']
                 ];
+
+                $lastId = $value['id'];
             }
 
-            return $this->success('', $newData);
+            return $this->success('', [
+                'list' => $newData,
+                'last_id' => (!empty($newData) && count($newData) == $newParams['limit']) ? $lastId : '',
+            ]);
 
         } catch (Exception $e) {
             Log::record('Exception: api-AdController-adOrderList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());

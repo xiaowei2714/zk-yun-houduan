@@ -20,14 +20,19 @@ class NoticeRecordLogic extends BaseLogic
      *
      * @return array|false
      */
-    public static function listByUser($userId, $type)
+    public static function listByUser(array $params)
     {
         try {
-            return NoticeRecord::field('id,title,content,create_time')
-                ->where('user_id', $userId)
-                ->where('type', $type)
-                ->order('id desc')
-                ->limit(100)
+            $obj = NoticeRecord::field('id,title,content,create_time')
+                ->where('user_id', $params['user_id'])
+                ->where('type', $params['type']);
+
+            if (!empty($params['last_id'])) {
+                $obj = $obj->where('id', '<', $params['last_id']);
+            }
+
+            return $obj->order('id desc')
+                ->limit($params['limit'])
                 ->select()
                 ->toArray();
 
