@@ -1,25 +1,17 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
 
 namespace app\api\logic;
 
 use app\common\enum\PayEnum;
 use app\common\logic\BaseLogic;
+use app\common\model\Recharge;
 use app\common\model\recharge\RechargeOrder;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
-
+use Exception;
+use think\facade\Db;
+use think\facade\Log;
+use think\Model;
 
 /**
  * 充值逻辑层
@@ -28,42 +20,81 @@ use app\common\service\ConfigService;
  */
 class RechargeLogic extends BaseLogic
 {
-
     /**
-     * @notes 充值
-     * @param array $params
+     * 列表
+     *
+     * @param $userId
      * @return array|false
-     * @author 段誉
-     * @date 2023/2/24 10:43
      */
-    public static function recharge(array $params)
+    public static function list($userId)
     {
         try {
-            $data = [
-                'sn' => generate_sn(RechargeOrder::class, 'sn'),
-                'order_terminal' => $params['terminal'],
-                'user_id' => $params['user_id'],
-                'pay_status' => PayEnum::UNPAID,
-                'order_amount' => $params['money'],
-                'number' => $params['number'],
-                'name' => $params['name'],
-                'meal_id' => $params['meal_id'],
-                'meal_discount' => $params['meal_discount'],
-                'pay_amount' => $params['meal_discounted_price'],
-                'type' => $params['type'],
-            ];
-            $order = RechargeOrder::create($data);
+            return Recharge::field([
+                'id',
+                'money',
+                'status',
+                'create_time',
+            ])->where('user_id', '=', $userId)
+                ->select()
+                ->toArray();
 
-            return [
-                'order_id' => (int)$order['id'],
-                'from' => 'recharge'
-            ];
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-RechargeLogic-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('获取列表异常');
             return false;
         }
     }
 
+    /**
+     * 详情
+     *
+     * @param $id
+     * @return Recharge|array|false|Model|null
+     */
+    public static function info($id)
+    {
+        try {
+            return Recharge::where('id', '=', $id)->find();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-RechargeLogic-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('获取详情异常');
+            return false;
+        }
+    }
+
+    /**
+     * 充值
+     *
+     * @param array $params
+     * @return false|mixed
+     */
+    public static function recharge(array $params)
+    {
+        try {
+            $orderNo = self::generateOrderNo($params['user_id']);
+
+            $rechargeParams = [
+                'user_id' => $params['user_id'],
+                'money' => $params['money'],
+                'order_no' => $orderNo,
+                'status' => 1
+            ];
+
+            $order = Recharge::create($rechargeParams);
+            if (empty($order['id'])) {
+                self::setError('充值失败');
+                return false;
+            }
+
+            return $order['id'];
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-RechargeLogic-recharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('充值异常');
+            return false;
+        }
+    }
 
     /**
      * @notes 充值配置
@@ -85,7 +116,17 @@ class RechargeLogic extends BaseLogic
         ];
     }
 
-
-
-
+    /**
+     * 交易生成唯一订单号
+     *
+     * @param $userId
+     * @return string
+     */
+    private static function generateOrderNo($userId): string
+    {
+        return 'J'
+            . date('smHyid')
+            . substr(str_pad($userId, 6, '0', STR_PAD_LEFT), -6)
+            . mt_rand(100, 999);
+    }
 }

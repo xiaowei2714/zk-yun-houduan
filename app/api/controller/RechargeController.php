@@ -1,24 +1,14 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
+
 namespace app\api\controller;
 
+use app\adminapi\lists\ConsumeRechargeLists;
 use app\api\lists\recharge\RechargeLists;
 use app\api\logic\RechargeLogic;
-use app\api\service\UserMealService;
 use app\api\validate\RechargeValidate;
+use think\facade\Log;
 use think\response\Json;
-
+use Exception;
 
 /**
  * 充值控制器
@@ -27,17 +17,122 @@ use think\response\Json;
  */
 class RechargeController extends BaseApiController
 {
+    /**
+     * 列表
+     *
+     * @return Json
+     */
+    public function list()
+    {
+        try {
+
+            $list = RechargeLogic::list($this->userId);
+            if ($list === false) {
+                return $this->fail(RechargeLogic::getError());
+            }
+
+            $newData = [];
+            foreach ($list as $value) {
+                $newData[] = [
+                    'id' => $value['id'],
+                    'status' => $value['status'],
+                    'money' => $value['money'],
+                    'time' => $value['create_time'],
+                ];
+            }
+
+            return $this->success('', [
+                'list' => $newData
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
 
     /**
-     * @notes 获取充值列表
+     * 详情
+     *
      * @return Json
-     * @author 段誉
-     * @date 2023/2/23 18:55
      */
-    public function lists()
+    public function info()
     {
-        return $this->dataLists(new RechargeLists());
+        $params = (new RechargeValidate())->get()->goCheck('id', [
+            'user_id' => $this->userId,
+        ]);
+
+        try {
+
+            $info = RechargeLogic::info($params['id']);
+            if (empty($info['id'])) {
+                return $this->fail('订单不存在');
+            }
+            if ($info['user_id'] != $this->userId) {
+                return $this->fail('异常操作');
+            }
+
+            return $this->success('', [
+                'info' => [
+                    'id' => $info['id'],
+                    'order_no' => $info['order_no'],
+                    'money' => $info['money'],
+                    'status' => $info['status'],
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
+
+    /**
+     * 充值
+     *
+     * @return Json
+     */
+    public function recharge(): Json
+    {
+        $params = (new RechargeValidate())->post()->goCheck('recharge', [
+            'user_id' => $this->userId,
+            'terminal' => $this->userInfo['terminal'],
+        ]);
+
+        try {
+
+            $result = RechargeLogic::recharge($params);
+            if ($result === false) {
+                return $this->fail(RechargeLogic::getError());
+            }
+
+            return $this->success('', [
+                'id' => $result
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-recharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+//    /**
+//     * 充值
+//     *
+//     * @return Json
+//     */
+//    public function recharge(): Json
+//    {
+//        $params = (new RechargeValidate())->post()->goCheck('recharge', [
+//            'user_id' => $this->userId,
+//            'terminal' => $this->userInfo['terminal'],
+//        ]);
+//        $result = RechargeLogic::recharge($params);
+//        if (false === $result) {
+//            return $this->fail(RechargeLogic::getError());
+//        }
+//        return $this->data($result);
+//    }
 
     /**
      * @notes 充值配置

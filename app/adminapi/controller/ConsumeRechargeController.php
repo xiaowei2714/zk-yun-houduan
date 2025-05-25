@@ -4,7 +4,6 @@ namespace app\adminapi\controller;
 
 use app\adminapi\lists\ConsumeRechargeLists;
 use app\adminapi\logic\ConsumeRechargeLogic;
-use app\adminapi\logic\user\UserLogic;
 use app\adminapi\validate\ConsumeRechargeValidate;
 use app\common\service\ConfigService;
 use app\common\service\ConsumeRechargeService;

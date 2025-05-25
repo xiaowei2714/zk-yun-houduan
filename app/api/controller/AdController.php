@@ -535,7 +535,7 @@ class AdController extends BaseApiController
                 return $this->fail('广告已下架');
             }
             if ($info['user_id'] == $this->userId) {
-//                return $this->fail('不支持向自己的订单下单');
+                return $this->fail('不支持向自己的订单下单');
             }
 
             $minMoney = bcmul($info['min_price'], $info['price'], 2);

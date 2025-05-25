@@ -1,26 +1,13 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
-
 
 namespace app\adminapi\controller;
 
-
-use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\RechargeLists;
 use app\adminapi\logic\RechargeLogic;
 use app\adminapi\validate\RechargeValidate;
-
+use think\facade\Log;
+use think\response\Json;
+use Exception;
 
 /**
  * Recharge控制器
@@ -29,23 +16,96 @@ use app\adminapi\validate\RechargeValidate;
  */
 class RechargeController extends BaseAdminController
 {
-
-
     /**
-     * @notes 获取列表
-     * @return \think\response\Json
-     * @author Jarshs
-     * @date 2025/03/31 16:12
+     * 获取列表
+     *
+     * @return Json
      */
     public function lists()
     {
-        return $this->dataLists(new RechargeLists());
+        try {
+            return $this->dataLists(new RechargeLists());
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-lists Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 
+    /**
+     * 获取列表
+     *
+     * @return Json
+     */
+    public function sum(): Json
+    {
+        try {
+            $newData = [
+                'all_count' => 0,
+                'all_sum' => '0.00',
+                'today_count' => 0,
+                'today_sum' => '0.00',
+                'seven_days_count' => 0,
+                'seven_days_sum' => '0.00',
+                'month_count' => 0,
+                'month_sum' => '0.00',
+            ];
+
+            $statusArr = [3];
+            $data = RechargeLogic::getSum($statusArr);
+            $newData['all_count'] = $data['cou'];
+            $newData['all_sum'] = number_format($data['sum'], 2);
+
+            $startTime = date('Y-m-d 00:00:00');
+            $data = RechargeLogic::getSum($statusArr, $startTime);
+            $newData['today_count'] = $data['cou'];
+            $newData['today_sum'] = number_format($data['sum'], 2);
+
+            $startTime = date('Y-m-d 00:00:00', time() - 6 * 24 * 3600);
+            $data = RechargeLogic::getSum($statusArr, $startTime);
+            $newData['seven_days_count'] = $data['cou'];
+            $newData['seven_days_sum'] = number_format($data['sum'], 2);
+
+            $startTime = date('Y-m-d 00:00:00', time() - 29 * 24 * 3600);
+            $data = RechargeLogic::getSum($statusArr, $startTime);
+            $newData['month_count'] = $data['cou'];
+            $newData['month_sum'] = number_format($data['sum'], 2);
+
+            return $this->success('', $newData);
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-sum Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 清理订单
+     *
+     * @return Json
+     */
+    public function clear(): Json
+    {
+        try {
+
+            $startTime = time() - 20 * 60;
+            $res = RechargeLogic::deleteUnPayOrder($startTime);
+            if ($res === false) {
+                return $this->fail(RechargeLogic::getError());
+            }
+            if (!$res) {
+                return $this->fail('未查询到有符合条件的订单');
+            }
+
+            return $this->success('清理成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-clear Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
 
     /**
      * @notes 添加
-     * @return \think\response\Json
+     * @return Json
      * @author Jarshs
      * @date 2025/03/31 16:12
      */
@@ -62,7 +122,7 @@ class RechargeController extends BaseAdminController
 
     /**
      * @notes 编辑
-     * @return \think\response\Json
+     * @return Json
      * @author Jarshs
      * @date 2025/03/31 16:12
      */
@@ -76,10 +136,9 @@ class RechargeController extends BaseAdminController
         return $this->fail(RechargeLogic::getError());
     }
 
-
     /**
      * @notes 删除
-     * @return \think\response\Json
+     * @return Json
      * @author Jarshs
      * @date 2025/03/31 16:12
      */
@@ -93,7 +152,7 @@ class RechargeController extends BaseAdminController
 
     /**
      * @notes 获取详情
-     * @return \think\response\Json
+     * @return Json
      * @author Jarshs
      * @date 2025/03/31 16:12
      */
@@ -103,6 +162,4 @@ class RechargeController extends BaseAdminController
         $result = RechargeLogic::detail($params);
         return $this->data($result);
     }
-
-
 }

@@ -1,24 +1,9 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
 
 namespace app\adminapi\lists;
 
-
-use app\adminapi\lists\BaseAdminDataLists;
 use app\common\model\Recharge;
 use app\common\lists\ListsSearchInterface;
-
 
 /**
  * Recharge列表
@@ -27,8 +12,6 @@ use app\common\lists\ListsSearchInterface;
  */
 class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
 {
-
-
     /**
      * @notes 设置搜索条件
      * @return \string[][]
@@ -42,7 +25,6 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
         ];
     }
 
-
     /**
      * @notes 获取列表
      * @return array
@@ -54,14 +36,45 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        return Recharge::where($this->searchWhere)
-            ->field(['id', 'user_id', 'money', 'desc', 'order_no', 'create_time', 'pay_time', 'hash', 'status'])
+        $alias = 'r';
+        $aliasD = $alias . '.';
+        $list = Recharge::field([
+            $aliasD . 'id',
+            $aliasD . 'user_id',
+            $aliasD . 'money',
+            $aliasD . 'desc',
+            $aliasD . 'order_no',
+            $aliasD . 'pay_time',
+            $aliasD . 'hash',
+            $aliasD . 'status',
+            $aliasD . 'create_time',
+            'u.nickname'
+        ])
+            ->alias($alias)
+            ->leftJoin('user u', $aliasD . 'user_id = u.id')
+            ->where($this->handleWhereData($this->params, $aliasD))
             ->limit($this->limitOffset, $this->limitLength)
-            ->order(['id' => 'desc'])
+            ->order([$aliasD . 'id' => 'desc'])
             ->select()
             ->toArray();
-    }
 
+        $newData = [];
+        foreach ($list as $value) {
+            $newData[] = [
+                'id' => $value['id'],
+                'user_show' => '[ID: ' . $value['user_id'] . '] ' . $value['nickname'],
+                'money' => $value['money'],
+                'desc' => $value['desc'],
+                'order_no' => $value['order_no'],
+                'pay_time' => !empty($value['pay_time']) ? date('Y-m-d H:i:s', $value['pay_time']) : '',
+                'hash' => $value['hash'],
+                'status' => $value['status'],
+                'create_time' => $value['create_time'],
+            ];
+        }
+
+        return $newData;
+    }
 
     /**
      * @notes 获取数量
@@ -71,7 +84,24 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return Recharge::where($this->searchWhere)->count();
+        return Recharge::where($this->handleWhereData($this->params))->count();
+    }
+
+    /**
+     * @param $params
+     * @param $pre
+     * @return array
+     */
+    private function handleWhereData($params, $pre = '')
+    {
+        $newData = [];
+        if (isset($params['order_no']) && $params['order_no'] !== '' && $params['order_no'] !== null) {
+            $newData[] = [
+                $pre . 'order_no', 'like', '%' . $params['order_no'] . '%'
+            ];
+        }
+
+        return $newData;
     }
 
 }

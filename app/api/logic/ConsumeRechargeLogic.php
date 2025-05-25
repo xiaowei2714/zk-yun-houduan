@@ -283,7 +283,7 @@ class ConsumeRechargeLogic extends BaseLogic
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeRechargeLogic-recharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
-            self::setError('充值失败');
+            self::setError('充值异常');
             Db::rollback();
             return false;
         }

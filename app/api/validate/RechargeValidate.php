@@ -25,24 +25,33 @@ use app\common\validate\BaseValidate;
  */
 class RechargeValidate extends BaseValidate
 {
-
     protected $rule = [
-        'money' => 'require|gt:0|checkMoney',
+        'id' => 'require|integer',
+        'money' => 'require|float|gt:0',
     ];
 
-
     protected $message = [
+        'id' => '请正确传入参数',
         'money.require' => '请填写充值金额',
+        'money.float' => '请正确填写充值金额',
         'money.gt' => '请填写大于0的充值金额',
     ];
 
+    /**
+     * @return RechargeValidate
+     */
+    public function sceneId(): RechargeValidate
+    {
+        return $this->only(['id']);
+    }
 
-    public function sceneRecharge()
+    /**
+     * @return RechargeValidate
+     */
+    public function sceneRecharge(): RechargeValidate
     {
         return $this->only(['money']);
     }
-
-
 
     /**
      * @notes 校验金额

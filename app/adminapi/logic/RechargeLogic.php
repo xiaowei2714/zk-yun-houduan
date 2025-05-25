@@ -1,24 +1,13 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
 
 namespace app\adminapi\logic;
-
 
 use app\common\model\Recharge;
 use app\common\logic\BaseLogic;
 use think\facade\Db;
-
+use think\facade\Log;
+use Exception;
+use think\Model;
 
 /**
  * Recharge逻辑
@@ -27,7 +16,59 @@ use think\facade\Db;
  */
 class RechargeLogic extends BaseLogic
 {
+    /**
+     * 汇总数据
+     *
+     * @param $statusArr
+     * @param $startTime
+     * @return Recharge|array|false|Model|null
+     */
+    public static function getSum($statusArr, $startTime = null)
+    {
+        try {
+            $obj = Recharge::field([
+                'count(*) as cou',
+                'sum(money) as sum'
+            ])->whereIn('status', $statusArr);
 
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->find();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-RechargeLogic-getSum Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 删除未支付订单
+     *
+     * @param $startTime
+     * @return mixed
+     */
+    public static function deleteUnPayOrder($startTime)
+    {
+        try {
+            $tablePre = env('database.prefix');
+            $rechargeTable = $tablePre . 'recharge';
+
+            $curTime = time();
+            $sql = <<< EOT
+UPDATE $rechargeTable SET `delete_time` = $curTime WHERE `status` = 1 AND `create_time` < $startTime
+EOT;
+
+            return Db::execute($sql);
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-RechargeLogic-deleteUnPayOrder  Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('清理异常');
+            return false;
+        }
+    }
 
     /**
      * @notes 添加
