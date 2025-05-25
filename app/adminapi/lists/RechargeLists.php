@@ -26,13 +26,9 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
     }
 
     /**
-     * @notes 获取列表
+     * 获取列表
+     *
      * @return array
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @author Jarshs
-     * @date 2025/03/31 16:12
      */
     public function lists(): array
     {
@@ -62,7 +58,8 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
         foreach ($list as $value) {
             $newData[] = [
                 'id' => $value['id'],
-                'user_show' => '[ID: ' . $value['user_id'] . '] ' . $value['nickname'],
+                'user_id' => $value['user_id'],
+                'nickname' =>$value['nickname'],
                 'money' => $value['money'],
                 'desc' => $value['desc'],
                 'order_no' => $value['order_no'],
