@@ -66,7 +66,7 @@ class AdController extends BaseApiController
                     'id' => $value['id'],
                     'nickname' => $value['nickname'],
                     'first_nickname' => $this->getFirstChar($value['nickname']),
-                    'num' => $value['left_num'] ?? 0,
+                    'num' => $value['left_num'] ?? '0.000',
                     'price' => $value['price'],
                     'min_price' => $value['min_price'],
                     'max_price' => $value['max_price'],
@@ -125,7 +125,7 @@ class AdController extends BaseApiController
                     'id' => $value['id'],
                     'nickname' => $nickname,
                     'first_nickname' => $this->getFirstChar($nickname),
-                    'num' => $value['left_num'] ?? 0,
+                    'num' => $value['left_num'] ?? '0.000',
                     'price' => $value['price'],
                     'min_price' => $value['min_price'],
                     'max_price' => $value['max_price'],
@@ -579,7 +579,7 @@ class AdController extends BaseApiController
                 return $this->fail('广告已下架');
             }
             if ($info['user_id'] == $this->userId) {
-                return $this->fail('不支持向自己的订单下单');
+//                return $this->fail('不支持向自己的订单下单');
             }
 
             $minMoney = bcmul($info['min_price'], $info['price'], 2);
@@ -597,11 +597,11 @@ class AdController extends BaseApiController
                 return $this->fail('用户不存在');
             }
 
-            $buyNum = bcdiv($params['price'], $info['price'], 2);
-            if (bccomp($userInfo['freeze_money'], $buyNum, 2) < 0) {
+            $buyNum = number_format(bcdiv($params['price'], $info['price'], 4), 3);
+            if (bccomp($userInfo['freeze_money'], $buyNum, 3) < 0) {
                 return $this->fail('您的冻结余额不足');
             }
-            if (bccomp($buyNum, $info['left_num'], 2) > 0) {
+            if (bccomp($buyNum, $info['left_num'], 3) > 0) {
                 return $this->fail('购买数量超过卖家可卖数量，卖家当前可卖数量为：' . $info['num']);
             }
 

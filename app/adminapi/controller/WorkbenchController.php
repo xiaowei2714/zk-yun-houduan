@@ -91,10 +91,10 @@ class WorkbenchController extends BaseAdminController
             'time' => date('Y-m-d H:i:s'),
 
             // 今日销售额
-            'today_sales' => number_format((($todayConsumeRechargeData['sum'] ?? 0) + ($todayQueryData['sum'] ?? 0)), 2),
+            'today_sales' => number_format((($todayConsumeRechargeData['sum'] ?? 0) + ($todayQueryData['sum'] ?? 0)), 3),
 
             // 总销售额
-            'total_sales' => number_format((($totalConsumeRechargeData['sum'] ?? 0) + ($totalQueryData['sum'] ?? 0)), 2),
+            'total_sales' => number_format((($totalConsumeRechargeData['sum'] ?? 0) + ($totalQueryData['sum'] ?? 0)), 3),
 
             // 订单量 (笔)
             'order_num' => ($todayConsumeRechargeData['cou'] ?? 0) + ($todayQueryData['cou'] ?? 0),
@@ -109,10 +109,10 @@ class WorkbenchController extends BaseAdminController
             'total_new_user' => $totalUserData,
 
             // 今日充值量
-            'today_recharge' => number_format($todayRechargeData['sum'] ?? 0, 2),
+            'today_recharge' => number_format($todayRechargeData['sum'] ?? 0, 3),
 
             // 总充值量
-            'total_recharge' => number_format($totalRechargeData['sum'] ?? 0, 2)
+            'total_recharge' => number_format($totalRechargeData['sum'] ?? 0, 3)
         ];
     }
 

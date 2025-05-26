@@ -477,7 +477,7 @@ class ConsumeRechargeController extends BaseApiController
         $newParams['pay_price'] = $mealInfo['discounted_price'];
 
         // 比较用户余额
-        if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
+        if (bccomp($userInfo['user_money'], $newParams['pay_price'], 3) < 0) {
             return $this->fail('余额不足，请前往充值页面进行充值');
         }
 
@@ -568,6 +568,7 @@ class ConsumeRechargeController extends BaseApiController
                 'recharge_price' => $params['buy_price'],
                 'meal_discount' => $params['discount'] ?? '',
                 'pay_price' => $params['pay_price'],
+                'rate' => null,
                 'type' => $params['type']
             ];
 
@@ -582,6 +583,14 @@ class ConsumeRechargeController extends BaseApiController
                 return $this->fail('当前用户账号异常，请联系客服');
             }
 
+            // 获取汇率
+            $rate = ConfigService::get('website', 'reference_rate', '');
+            if (empty($rate)) {
+                return $this->fail('未获取到汇率');
+            }
+
+            $newParams['rate'] = $rate;
+
             // 获取优惠配置
             $discount = ConfigService::get('website', 'card_discount', '');
             if (empty($discount) || $discount >= 10 || $discount <= 0) {
@@ -593,14 +602,14 @@ class ConsumeRechargeController extends BaseApiController
 
             $computePrice = $newParams['recharge_price'];
             if ($discount !== '') {
-                $computePrice = number_format(bcmul($newParams['recharge_price'], bcdiv($discount, 10, 3), 3), 2);
+                $computePrice = number_format(bcmul($newParams['recharge_price'], bcdiv($discount, 10, 4), 4), 3);
             }
-            if (bccomp($computePrice, $newParams['pay_price'], 2) != 0) {
+            if (bccomp($computePrice, $newParams['pay_price'], 3) != 0) {
                 return $this->fail('充值实付金额发生变化，请联系客服人员');
             }
 
             // 比较用户余额
-            if (bccomp($userInfo['user_money'], $newParams['pay_price'], 2) < 0) {
+            if (bccomp($userInfo['user_money'], $newParams['pay_price'], 3) < 0) {
                 return $this->fail('余额不足，请前往充值页面进行充值');
             }
 
@@ -784,7 +793,7 @@ class ConsumeRechargeController extends BaseApiController
 
         // 比较用户余额
         $total = bcmul($mealInfo['discounted_price'], $dataNum, 2);
-        if (bccomp($userInfo['user_money'], $total, 2) < 0) {
+        if (bccomp($userInfo['user_money'], $total, 3) < 0) {
             return $this->fail('余额不足，请前往充值页面进行充值');
         }
 
@@ -958,7 +967,7 @@ class ConsumeRechargeController extends BaseApiController
                 }
 
                 // 比较用户余额
-                if (bccomp($userInfo['user_money'], $queryPrice, 2) != 1) {
+                if (bccomp($userInfo['user_money'], $queryPrice, 3) != 1) {
                     return $this->fail('余额不足，请前往充值页面进行充值');
                 }
 
@@ -982,7 +991,7 @@ class ConsumeRechargeController extends BaseApiController
                 }
 
                 // 比较用户余额
-                if (bccomp($userInfo['user_money'], $queryPrice, 2) != 1) {
+                if (bccomp($userInfo['user_money'], $queryPrice, 3) != 1) {
                     return $this->fail('余额不足，请前往充值页面进行充值');
                 }
 

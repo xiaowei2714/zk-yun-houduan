@@ -46,12 +46,12 @@ class UserMealService
             $discountPrice = bcmul($tmpData['price'], $realDiscount, 4);
             $realPrice = bcdiv($discountPrice, $rate, 34);
 
-            $tmpData['discounted_price'] = number_format($realPrice, 2);
+            $tmpData['discounted_price'] = number_format($realPrice, 3);
 
             // 计算优惠价格
             $subPrice = bcsub($tmpData['price'], $discountPrice, 4);
             $subRealPrice = bcdiv($subPrice, $rate, 4);
-            $tmpData['price2'] = number_format($subRealPrice, 2);
+            $tmpData['price2'] = number_format($subRealPrice, 3);
 
             $newData[] = $tmpData;
         }
@@ -82,9 +82,9 @@ class UserMealService
             'day_astrict_num' => $mealInfo['day_astrict_num'],
             'meanwhile_order_num' => $mealInfo['meanwhile_order_num'],
             'operator'  => json_decode($mealInfo['operator'], true),
-            'forbid_buy_city'  => explode(',', $mealInfo['forbid_buy_city']),
-            'allow_buy_nums'  => explode(',', $mealInfo['allow_buy_nums']),
-            'forbid_buy_nums'  => explode(',', $mealInfo['forbid_buy_nums']),
+            'forbid_buy_city'  => !empty($mealInfo['forbid_buy_city']) ? explode(',', $mealInfo['forbid_buy_city']) : [],
+            'allow_buy_nums'  => !empty($mealInfo['allow_buy_nums']) ? explode(',', $mealInfo['allow_buy_nums']) : [],
+            'forbid_buy_nums'  => !empty($mealInfo['forbid_buy_nums']) ? explode(',', $mealInfo['forbid_buy_nums']) : [],
         ];
 
         $userMealInfo = (new UserMealLogic())->getMealInfo($userId, $mealInfo['id']);
@@ -99,7 +99,7 @@ class UserMealService
         $discountPrice = bcmul($data['price'], $realDiscount, 4);
         $realPrice = bcdiv($discountPrice, $rate, 34);
 
-        $data['discounted_price'] = number_format($realPrice, 2);
+        $data['discounted_price'] = number_format($realPrice, 3);
 
         return $data;
     }

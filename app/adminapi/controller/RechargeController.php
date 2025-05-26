@@ -41,34 +41,34 @@ class RechargeController extends BaseAdminController
         try {
             $newData = [
                 'all_count' => 0,
-                'all_sum' => '0.00',
+                'all_sum' => '0.000',
                 'today_count' => 0,
-                'today_sum' => '0.00',
+                'today_sum' => '0.000',
                 'seven_days_count' => 0,
-                'seven_days_sum' => '0.00',
+                'seven_days_sum' => '0.000',
                 'month_count' => 0,
-                'month_sum' => '0.00',
+                'month_sum' => '0.0-0',
             ];
 
             $statusArr = [1,2,3];
             $data = RechargeLogic::getSum($statusArr);
             $newData['all_count'] = $data['cou'];
-            $newData['all_sum'] = number_format($data['sum'], 2);
+            $newData['all_sum'] = number_format($data['sum'], 3);
 
             $startTime = strtotime(date('Y-m-d 00:00:00'));
             $data = RechargeLogic::getSum($statusArr, $startTime);
             $newData['today_count'] = $data['cou'];
-            $newData['today_sum'] = number_format($data['sum'], 2);
+            $newData['today_sum'] = number_format($data['sum'], 3);
 
             $startTime = strtotime(date('Y-m-d 00:00:00', time() - 6 * 24 * 3600));
             $data = RechargeLogic::getSum($statusArr, $startTime);
             $newData['seven_days_count'] = $data['cou'];
-            $newData['seven_days_sum'] = number_format($data['sum'], 2);
+            $newData['seven_days_sum'] = number_format($data['sum'], 3);
 
             $startTime = strtotime(date('Y-m-d 00:00:00', time() - 29 * 24 * 3600));
             $data = RechargeLogic::getSum($statusArr, $startTime);
             $newData['month_count'] = $data['cou'];
-            $newData['month_sum'] = number_format($data['sum'], 2);
+            $newData['month_sum'] = number_format($data['sum'], 3);
 
             return $this->success('', $newData);
         } catch (Exception $e) {

@@ -644,7 +644,7 @@ class AdOrderLogic extends BaseLogic
      */
     private static function generateOrderNo($userId): string
     {
-        return 'G'
+        return 'J'
             . date('syHmid')
             . substr(str_pad($userId, 6, '0', STR_PAD_LEFT), -6)
             . mt_rand(100, 999);
