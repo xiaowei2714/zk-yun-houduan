@@ -74,6 +74,7 @@ class RechargeLogic extends BaseLogic
             $rechargeParams = [
                 'user_id' => $params['user_id'],
                 'money' => $params['money'],
+                'pay_money' => $params['pay_money'],
                 'order_no' => $orderNo,
                 'status' => 1
             ];

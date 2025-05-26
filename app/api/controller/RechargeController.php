@@ -5,6 +5,7 @@ namespace app\api\controller;
 use app\api\logic\RechargeLogic;
 use app\api\validate\RechargeValidate;
 use app\common\service\ConfigService;
+use think\facade\Cache;
 use think\facade\Log;
 use think\response\Json;
 use Exception;
@@ -62,7 +63,7 @@ class RechargeController extends BaseApiController
                 $newData[] = [
                     'id' => $value['id'],
                     'status' => $value['status'],
-                    'money' => $value['money'],
+                    'money' => $value['pay_money'],
                     'time' => $value['create_time'],
                 ];
             }
@@ -102,7 +103,7 @@ class RechargeController extends BaseApiController
                 'info' => [
                     'id' => $info['id'],
                     'order_no' => $info['order_no'],
-                    'money' => $info['money'],
+                    'money' => $info['pay_money'],
                     'status' => $info['status'],
                 ]
             ]);
@@ -126,6 +127,62 @@ class RechargeController extends BaseApiController
         ]);
 
         try {
+
+            $strNumber = $params['money'];
+
+            $decimalPart = '';
+            $decimalLength = 0;
+            if (str_contains($strNumber, '.')) {
+                $dNum = substr($strNumber, strpos($strNumber, '.') + 1);
+                $decimalPart = bccomp($dNum, 0, 6) != 0 ? $dNum : '';
+                $decimalLength = strlen($decimalPart);
+            }
+
+            $params['pay_money'] = '';
+            if ($decimalLength >= 6) {
+                $decimalPart = substr($decimalPart, 0, 6);
+
+                $strNumber = intval($strNumber) . '.' . $decimalPart;
+
+                $key = 'GEN_RECHARGE_ORDER_' . $strNumber;
+                $lockedRes = $this->cacheLocked($key);
+                if (!$lockedRes) {
+                    return $this->fail('不支持该金额充值，请另更换其他金额');
+                }
+
+                $params['pay_money'] = $strNumber;
+            } else {
+
+                $padLength = 6 - $decimalLength;
+
+                $maxNum = '';
+                $maxNum = str_pad($maxNum, $padLength, 9);
+                $startNum = 0;
+
+                while ($startNum < $maxNum) {
+
+                    $tmp = random_int(0, $maxNum);
+                    if ($decimalLength === 0) {
+                        $strNumber = intval($strNumber) . '.' . str_pad($tmp, $padLength, 0, STR_PAD_LEFT);
+                    } else {
+                        $strNumber = $strNumber . str_pad($tmp, 6, 0, STR_PAD_LEFT);
+                    }
+
+                    $key = 'GEN_RECHARGE_ORDER_' . $strNumber;
+                    $lockedRes = $this->cacheLocked($key);
+                    if (!$lockedRes) {
+                        $startNum += 1;
+                        continue;
+                    }
+
+                    $params['pay_money'] = $strNumber;
+                    break;
+                }
+
+                if (empty($params['pay_money'])) {
+                    return $this->fail('不支持该金额充值，请另更换其他金额');
+                }
+            }
 
             $result = RechargeLogic::recharge($params);
             if ($result === false) {
@@ -169,5 +226,19 @@ class RechargeController extends BaseApiController
     public function config(): Json
     {
         return $this->data(RechargeLogic::config($this->userId));
+    }
+
+    /**
+     * @param $key
+     * @return bool
+     */
+    private function cacheLocked($key)
+    {
+        $res = Cache::get($key);
+        if ($res) {
+            return false;
+        }
+
+        return Cache::set($key,  1, 1200);
     }
 }
