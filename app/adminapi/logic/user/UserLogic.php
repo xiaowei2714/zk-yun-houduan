@@ -17,6 +17,7 @@ use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\AccountLogLogic;
 use app\common\logic\BaseLogic;
+use app\common\model\ConsumeRecharge;
 use app\common\model\user\User;
 use think\facade\Db;
 use think\facade\Log;
@@ -30,6 +31,28 @@ use Exception;
  */
 class UserLogic extends BaseLogic
 {
+    /**
+     * 汇总数据
+     *
+     * @param $createTime
+     * @return false|int
+     */
+    public static function count($createTime = null)
+    {
+        try {
+            if (!empty($createTime)) {
+                return User::where('create_time', '>=', $createTime)->count();
+            }
+
+            return User::count();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-info Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * @param $value
      * @return array|false

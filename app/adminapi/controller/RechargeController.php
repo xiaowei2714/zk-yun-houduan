@@ -50,22 +50,22 @@ class RechargeController extends BaseAdminController
                 'month_sum' => '0.00',
             ];
 
-            $statusArr = [3];
+            $statusArr = [1,2,3];
             $data = RechargeLogic::getSum($statusArr);
             $newData['all_count'] = $data['cou'];
             $newData['all_sum'] = number_format($data['sum'], 2);
 
-            $startTime = date('Y-m-d 00:00:00');
+            $startTime = strtotime(date('Y-m-d 00:00:00'));
             $data = RechargeLogic::getSum($statusArr, $startTime);
             $newData['today_count'] = $data['cou'];
             $newData['today_sum'] = number_format($data['sum'], 2);
 
-            $startTime = date('Y-m-d 00:00:00', time() - 6 * 24 * 3600);
+            $startTime = strtotime(date('Y-m-d 00:00:00', time() - 6 * 24 * 3600));
             $data = RechargeLogic::getSum($statusArr, $startTime);
             $newData['seven_days_count'] = $data['cou'];
             $newData['seven_days_sum'] = number_format($data['sum'], 2);
 
-            $startTime = date('Y-m-d 00:00:00', time() - 29 * 24 * 3600);
+            $startTime = strtotime(date('Y-m-d 00:00:00', time() - 29 * 24 * 3600));
             $data = RechargeLogic::getSum($statusArr, $startTime);
             $newData['month_count'] = $data['cou'];
             $newData['month_sum'] = number_format($data['sum'], 2);

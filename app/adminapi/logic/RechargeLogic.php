@@ -45,6 +45,34 @@ class RechargeLogic extends BaseLogic
     }
 
     /**
+     * 汇总数据
+     *
+     * @param $statusArr
+     * @param $startTime
+     * @return array|false
+     */
+    public static function getGroupSumByDay($statusArr, $startTime = null)
+    {
+        try {
+            $obj = Recharge::field([
+                "FROM_UNIXTIME(`create_time`, '%m/%d') date",
+                'sum(money) as sum'
+            ])->whereIn('status', $statusArr);
+
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->group('date')->select()->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-RechargeLogic-getSum Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 删除未支付订单
      *
      * @param $startTime
