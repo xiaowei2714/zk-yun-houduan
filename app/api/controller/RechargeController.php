@@ -165,7 +165,7 @@ class RechargeController extends BaseApiController
                     if ($decimalLength === 0) {
                         $strNumber = intval($strNumber) . '.' . str_pad($tmp, $padLength, 0, STR_PAD_LEFT);
                     } else {
-                        $strNumber = $strNumber . str_pad($tmp, 6, 0, STR_PAD_LEFT);
+                        $strNumber = $strNumber . str_pad($tmp, $padLength, 0, STR_PAD_LEFT);
                     }
 
                     $key = 'GEN_RECHARGE_ORDER_' . $strNumber;
