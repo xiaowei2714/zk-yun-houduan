@@ -2,10 +2,9 @@
 
 namespace app\api\controller;
 
-use app\adminapi\lists\ConsumeRechargeLists;
-use app\api\lists\recharge\RechargeLists;
 use app\api\logic\RechargeLogic;
 use app\api\validate\RechargeValidate;
+use app\common\service\ConfigService;
 use think\facade\Log;
 use think\response\Json;
 use Exception;
@@ -18,11 +17,38 @@ use Exception;
 class RechargeController extends BaseApiController
 {
     /**
+     * @return Json
+     */
+    public function getConfig(): Json
+    {
+        try {
+
+            $confNames = [
+                'recharge_network',
+                'recharge_address',
+            ];
+
+            $confData = ConfigService::getByNames('website', $confNames);
+            $confData = array_column($confData, 'value', 'name');
+
+            return $this->success('', [
+                'network' => $confData['recharge_network'] ?? '',
+                'address' => $confData['recharge_address'] ?? '',
+                'img' => !empty($confData['recharge_address']) ? 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . $confData['recharge_address'] : '',
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-getConfig Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
      * 列表
      *
      * @return Json
      */
-    public function list()
+    public function list(): Json
     {
         try {
 
@@ -56,7 +82,7 @@ class RechargeController extends BaseApiController
      *
      * @return Json
      */
-    public function info()
+    public function info(): Json
     {
         $params = (new RechargeValidate())->get()->goCheck('id', [
             'user_id' => $this->userId,
@@ -140,7 +166,7 @@ class RechargeController extends BaseApiController
      * @author 段誉
      * @date 2023/2/24 16:56
      */
-    public function config()
+    public function config(): Json
     {
         return $this->data(RechargeLogic::config($this->userId));
     }

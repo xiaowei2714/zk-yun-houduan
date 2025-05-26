@@ -73,6 +73,8 @@ class WebSettingLogic extends BaseLogic
             'kf_qrcode' => FileService::getFileUrl(ConfigService::get('website', 'kf_qrcode')),
             'kf_mobile' => ConfigService::get('website', 'kf_mobile', ''),
             'kf_time' => ConfigService::get('website', 'kf_time', ''),
+            'recharge_network' => ConfigService::get('website', 'recharge_network', ''),
+            'recharge_address' => ConfigService::get('website', 'recharge_address', ''),
 
             'phone_first_ratio' => ConfigService::get('website', 'phone_first_ratio', ''),
             'phone_second_ratio' => ConfigService::get('website', 'phone_second_ratio', ''),
@@ -145,6 +147,8 @@ class WebSettingLogic extends BaseLogic
         ConfigService::set('website', 'kf_qrcode', $kfQrcode);
         ConfigService::set('website', 'kf_mobile', $params['kf_mobile']);
         ConfigService::set('website', 'kf_time', $params['kf_time']);
+        ConfigService::set('website', 'recharge_network', $params['recharge_network']);
+        ConfigService::set('website', 'recharge_address', $params['recharge_address']);
 
         ConfigService::set('website', 'phone_first_ratio', $params['phone_first_ratio']);
         ConfigService::set('website', 'phone_second_ratio', $params['phone_second_ratio']);

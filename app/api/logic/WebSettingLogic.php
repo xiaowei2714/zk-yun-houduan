@@ -53,5 +53,4 @@ class WebSettingLogic extends BaseLogic
     {
         return ConfigService::get('website', 'query_df');
     }
-
 }
