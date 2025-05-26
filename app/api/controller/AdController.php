@@ -238,7 +238,7 @@ class AdController extends BaseApiController
             if ($userInfo['ad_perm'] != 2) {
                 return $this->fail('广告功能不可用');
             }
-            if (bccomp($userInfo['user_money'], $params['num'], 2) < 0) {
+            if (bccomp($userInfo['user_money'], $params['num'], 3) < 0) {
                 return $this->fail('出售数量大于可出售数量');
             }
 
@@ -339,7 +339,7 @@ class AdController extends BaseApiController
             if (empty($userInfo['id'])) {
                 return $this->fail('用户不存在');
             }
-            if (bccomp($userInfo['freeze_money'], $info['num'], 2) < 0) {
+            if (bccomp($userInfo['freeze_money'], $info['num'], 3) < 0) {
                 return $this->fail('返还的冻结金额不足');
             }
 

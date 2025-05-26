@@ -147,8 +147,8 @@ class IndexController extends BaseApiController
         return $this->success('', [
             'list' => $list,
             'last_id' => (!empty($list) && count($list) == $limit) ? $lastId : '',
-            'shouru' => number_format($shouru, 2),
-            'zhichu' => number_format($zhichu, 2),
+            'shouru' => number_format($shouru, 3),
+            'zhichu' => number_format($zhichu, 3),
         ]);
     }
 

@@ -216,7 +216,7 @@ class ConsumeRechargeController extends BaseApiController
                 'balances_price' => $info['balances_price'] ?: 0,
                 'meal_discount' => preg_replace('/\.?0*$/', '', $info['meal_discount']),
                 'pay_price' => $info['pay_price'],
-                'distance_price' => bcsub($info['pay_price'], bcmul($info['pay_price'], bcdiv($info['meal_discount'], 10, 2), 2), 2),
+                'distance_price' => bcsub($info['pay_price'], bcmul($info['pay_price'], bcdiv($info['meal_discount'], 10, 4), 4), 3),
                 'hl' => $rate,
                 'us_price' => !empty($rate) ? bcdiv($info['pay_price'], $rate, 2) : '',
                 'status' => $info['status'],

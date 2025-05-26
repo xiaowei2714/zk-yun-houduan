@@ -261,8 +261,8 @@ class UserController extends BaseApiController
                     'xjTotal' => $tmpTotal
                 ];
 
-                $todayTotal = bcadd($todayTotal, $tmpTodayTotal, 2);
-                $total = bcadd($total, $tmpTotal, 2);
+                $todayTotal = bcadd($todayTotal, $tmpTodayTotal, 3);
+                $total = bcadd($total, $tmpTotal, 3);
             }
 
             return $this->success('', [

@@ -94,7 +94,7 @@ class ConsumeQueryController extends BaseApiController
             }
 
             // 比较用户余额
-            if (bccomp($userInfo['user_money'], $queryPrice, 2) < 0) {
+            if (bccomp($userInfo['user_money'], $queryPrice, 3) < 0) {
                 return $this->fail('余额不足，请前往充值页面进行充值');
             }
 
@@ -191,7 +191,7 @@ class ConsumeQueryController extends BaseApiController
 
             // 比较用户余额
             $num = count($batchData);
-            if (bccomp($userInfo['user_money'], bcmul($num, $queryPrice, 2), 2) < 0) {
+            if (bccomp($userInfo['user_money'], bcmul($num, $queryPrice, 3), 3) < 0) {
                 return $this->fail('余额不足，请前往充值页面进行充值');
             }
 
@@ -287,7 +287,7 @@ class ConsumeQueryController extends BaseApiController
             }
 
             // 比较用户余额
-            if (bccomp($userInfo['user_money'], $queryPrice, 2) < 0) {
+            if (bccomp($userInfo['user_money'], $queryPrice, 3) < 0) {
                 return $this->fail('余额不足，请前往充值页面进行充值');
             }
 
@@ -372,7 +372,7 @@ class ConsumeQueryController extends BaseApiController
 
             // 比较用户余额
             $num = count($batchData);
-            if (bccomp($userInfo['user_money'], bcmul($num, $queryPrice, 2), 2) < 0) {
+            if (bccomp($userInfo['user_money'], bcmul($num, $queryPrice, 3), 3) < 0) {
                 return $this->fail('余额不足，请前往充值页面进行充值');
             }
 

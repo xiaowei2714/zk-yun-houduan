@@ -118,7 +118,7 @@ class WithdrawController extends BaseAdminController
         $jtendTime = strtotime(date('Y-m-d 23:59:59'));
         $jtMoney = Withdraw::whereBetween('create_time', [$jtstartTime, $jtendTime])
             ->sum('money');
-        $jtMoney = number_format($jtMoney, 2, '.', '');
+        $jtMoney = number_format($jtMoney, 3, '.', '');
         $jtCount = Withdraw::whereBetween('create_time', [$jtstartTime, $jtendTime])
             ->count();
 
@@ -126,7 +126,7 @@ class WithdrawController extends BaseAdminController
         $qtEndTime = strtotime(date('Y-m-d 23:59:59'));
         $qtMoney = Withdraw::whereBetween('create_time', [$qtStartTime, $qtEndTime])
             ->sum('money');
-        $qtMoney = number_format($qtMoney, 2, '.', '');
+        $qtMoney = number_format($qtMoney, 3, '.', '');
         $qtCount = Withdraw::whereBetween('create_time', [$qtStartTime, $qtEndTime])
             ->count();
 
@@ -134,12 +134,12 @@ class WithdrawController extends BaseAdminController
         $ssEndTime = strtotime(date('Y-m-d 23:59:59'));
         $ssMoney = Withdraw::whereBetween('create_time', [$ssStartTime, $ssEndTime])
             ->sum('money');
-        $ssMoney = number_format($ssMoney, 2, '.', '');
+        $ssMoney = number_format($ssMoney, 3, '.', '');
         $ssCount = Withdraw::whereBetween('create_time', [$ssStartTime, $ssEndTime])
             ->count();
 
         $totalMoney = Withdraw::sum('money');
-        $totalMoney = number_format($totalMoney, 2, '.', '');
+        $totalMoney = number_format($totalMoney, 3, '.', '');
         $totalCount = Withdraw::count();
 
         return $this->success('', [
