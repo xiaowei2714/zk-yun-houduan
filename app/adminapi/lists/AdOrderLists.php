@@ -39,7 +39,7 @@ class AdOrderLists extends BaseAdminDataLists implements ListsSearchInterface
     public function setSearch(): array
     {
         return [
-            '=' => ['order_type', 'status'],
+            '=' => ['order_type', 'status', 'appeal'],
             '%like%' => ['order_no'],
         ];
     }
@@ -57,7 +57,7 @@ class AdOrderLists extends BaseAdminDataLists implements ListsSearchInterface
     public function lists(): array
     {
         $list = AdOrder::where($this->searchWhere)
-            ->field(['id', 'user_id', 'to_user_id', 'ad_id', 'order_no', 'order_type', 'num', 'price', 'dan_price', 'pay_type', 'status', 'create_time', 'cancel_type'])
+            ->field(['id', 'user_id', 'to_user_id', 'ad_id', 'order_no', 'order_type', 'num', 'price', 'dan_price', 'pay_type', 'status', 'appeal', 'create_time', 'cancel_type'])
             ->limit($this->limitOffset, $this->limitLength)
             ->order(['id' => 'desc'])
             ->select()

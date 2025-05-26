@@ -16,7 +16,7 @@ namespace app\common\model;
 
 
 use app\common\model\BaseModel;
-
+use think\model\concern\SoftDelete;
 
 
 /**
@@ -26,9 +26,9 @@ use app\common\model\BaseModel;
  */
 class AdOrder extends BaseModel
 {
-    
-    protected $name = 'ad_order';
-    
+    use SoftDelete;
 
-    
+    protected $name = 'ad_order';
+    protected $deleteTime = 'delete_time';
+
 }
