@@ -138,6 +138,7 @@ class RechargeController extends BaseApiController
                 $decimalLength = strlen($decimalPart);
             }
 
+            $key = '';
             $params['pay_money'] = '';
             if ($decimalLength >= 6) {
                 $decimalPart = substr($decimalPart, 0, 6);
@@ -179,6 +180,15 @@ class RechargeController extends BaseApiController
                     break;
                 }
 
+//                $strNumber = '50.000000';
+//                $key = 'GEN_RECHARGE_ORDER_' . $strNumber;
+//                $lockedRes = $this->cacheLocked($key);
+//                if (!$lockedRes) {
+//                    return $this->fail('不支持该金额充值，请另更换其他金额');
+//                }
+//
+//                $params['pay_money'] = $strNumber;
+
                 if (empty($params['pay_money'])) {
                     return $this->fail('不支持该金额充值，请另更换其他金额');
                 }
@@ -186,9 +196,11 @@ class RechargeController extends BaseApiController
 
             $result = RechargeLogic::recharge($params);
             if ($result === false) {
+                Cache::del($key);
                 return $this->fail(RechargeLogic::getError());
             }
 
+            Cache::set($key,  $result, 1800);
             return $this->success('', [
                 'id' => $result
             ]);
@@ -239,6 +251,6 @@ class RechargeController extends BaseApiController
             return false;
         }
 
-        return Cache::set($key,  1, 1200);
+        return Cache::set($key,  'z', 1200);
     }
 }

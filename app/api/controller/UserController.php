@@ -181,33 +181,45 @@ class UserController extends BaseApiController
 
             // 用户详情
             $userInfo = UserLogic::info($this->userId);
-            $newData['user_money'] = number_format($userInfo['user_money'] ?? 0,2);
-            $newData['next_money'] = number_format( $userInfo['total_award_price'] ?? 0,2);
+
+            $tmp = $userInfo['user_money'] ?? 0;
+            $newData['user_money'] = substr($tmp, 0, strpos($tmp, '.') + 4);
+
+            $tmp = $userInfo['total_award_price'] ?? 0;
+            $newData['next_money'] = substr($tmp, 0, strpos($tmp, '.') + 4);
 
             // 话费、电费 总数
             $rechargeData = ConsumeRechargeLogic::groupSumMoney($this->userId);
             $rechargeData = array_column($rechargeData, 'pay_price', 'type');
-            $newData['phone_money'] = number_format($rechargeData[1] ?? 0,2);
-            $newData['electricity_money'] = number_format( $rechargeData[2] ?? 0,2);
+
+            $tmp = $rechargeData[1] ?? 0;
+            $newData['phone_money'] = substr($tmp, 0, strpos($tmp, '.') + 4);
+
+            $tmp = $rechargeData[2] ?? 0;
+            $newData['electricity_money'] = substr($tmp, 0, strpos($tmp, '.') + 4);
 
             $today = strtotime(date('Y-m-d 00:00:00'));
 
             // 话费、电费 当天
             $rechargeData = ConsumeRechargeLogic::groupSumMoney($this->userId, $today);
             $rechargeData = array_column($rechargeData, 'pay_price', 'type');
-            $newData['phone_today_money'] = number_format($rechargeData[1] ?? 0,2);
-            $newData['electricity_today_money'] = number_format( $rechargeData[2] ?? 0,2);
+
+            $tmp = $rechargeData[1] ?? 0;
+            $newData['phone_today_money'] = substr($tmp, 0, strpos($tmp, '.') + 4);
+
+            $tmp = $rechargeData[2] ?? 0;
+            $newData['electricity_today_money'] = substr($tmp, 0, strpos($tmp, '.') + 4);
 
             // 查询
             $querySum = ConsumeQueryLogic::groupSumMoney($this->userId);
-            $newData['query_money'] = number_format($querySum,2);
+            $newData['query_money'] = substr($querySum, 0, strpos($querySum, '.') + 4);
 
             $querySum = ConsumeQueryLogic::groupSumMoney($this->userId, $today);
-            $newData['query_today_money'] = number_format($querySum,2);
+            $newData['query_today_money'] = substr($querySum, 0, strpos($querySum, '.') + 4);
 
             // 返佣
             $cashbackSum = UserMoneyLogLogic::getUserCashback($this->userId, $today);
-            $newData['next_today_money'] = number_format($cashbackSum,2);
+            $newData['next_today_money'] = substr($cashbackSum, 0, strpos($cashbackSum, '.') + 4);
 
             return $this->success('', $newData);
 

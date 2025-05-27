@@ -915,6 +915,8 @@ class IndexController extends BaseApiController
         }
         $userPayTypes = UserPayType::where('user_id', $this->userId)->count();
         $user['pay_type_count'] = $userPayTypes;
+        $user['user_money'] = substr($user['user_money'], 0, strpos($user['user_money'], '.') + 4);
+
         return $this->success('', [
             'info' => $user
         ]);

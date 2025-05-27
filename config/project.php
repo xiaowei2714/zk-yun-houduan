@@ -113,5 +113,9 @@ return [
         4 => '虚拟',
     ],
 
+    // 话费查询key
     'recharge_key' => 'T7wxGRMUgYGySPIViThXoVwLSV',
+
+    // 合约地址
+    'recharge_contract' => 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
 ];

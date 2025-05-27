@@ -28,7 +28,7 @@ class RechargeLogic extends BaseLogic
         try {
             $obj = Recharge::field([
                 'count(*) as cou',
-                'sum(money) as sum'
+                'sum(pay_money) as sum'
             ])->whereIn('status', $statusArr);
 
             if (!empty($startTime)) {

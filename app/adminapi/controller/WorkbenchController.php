@@ -87,6 +87,9 @@ class WorkbenchController extends BaseAdminController
         $todayRechargeData = RechargeLogic::getSum($statusArr, $todayTime);
         $totalRechargeData = RechargeLogic::getSum($statusArr);
 
+        $todayRechargeSum = $todayRechargeData['sum'] ?? 0;
+        $totalRechargeSum = $totalRechargeData['sum'] ?? 0;
+
         return [
             'time' => date('Y-m-d H:i:s'),
 
@@ -109,10 +112,10 @@ class WorkbenchController extends BaseAdminController
             'total_new_user' => $totalUserData,
 
             // 今日充值量
-            'today_recharge' => number_format($todayRechargeData['sum'] ?? 0, 3),
+            'today_recharge' => substr($todayRechargeSum, 0, strpos($todayRechargeSum, '.') + 4),
 
             // 总充值量
-            'total_recharge' => number_format($totalRechargeData['sum'] ?? 0, 3)
+            'total_recharge' => substr($todayRechargeSum, 0, strpos($totalRechargeSum, '.') + 4)
         ];
     }
 

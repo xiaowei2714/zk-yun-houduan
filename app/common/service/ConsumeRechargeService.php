@@ -90,7 +90,7 @@ class ConsumeRechargeService
         }
 
         $configKey = Config::get('project.recharge_key');
-        $url = '/ap.xiaoyun.top/api/xy/dfcx';
+        $url = 'https://ap.xiaoyun.top/api/xy/dfcx';
 
         $params = [
             'account' => $account,

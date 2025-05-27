@@ -28,10 +28,12 @@ class RechargeLogic extends BaseLogic
         try {
             return Recharge::field([
                 'id',
-                'money',
+                'pay_money',
                 'status',
                 'create_time',
             ])->where('user_id', '=', $userId)
+                ->order('id desc')
+                ->limit(100)
                 ->select()
                 ->toArray();
 
