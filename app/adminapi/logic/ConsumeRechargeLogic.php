@@ -450,7 +450,9 @@ class ConsumeRechargeLogic extends BaseLogic
                 'update_time' => time()
             ];
 
-            $res = ConsumeRecharge::where('id', $info['id'])->update($data);
+            $res = ConsumeRecharge::where('id', $info['id'])
+                ->whereIn('status', [1, 2])
+                ->update($data);
             if (empty($res)) {
                 self::setError('更新成功失败');
                 Db::rollback();
@@ -461,7 +463,7 @@ class ConsumeRechargeLogic extends BaseLogic
             $noticeData = [
                 'user_id' => $info['user_id'],
                 'title' => '订单充值成功提醒',
-                'content' => '您的' . $desc . '订单' . $info['sn'] . '已于' . date('Y-m-d H:i', strtotime($info['create_time'])) . '充值成功' . $info['recharge_price'],
+                'content' => '您的' . $desc . '订单 ' . $info['sn'] . ' 已于 ' . date('Y-m-d H:i', strtotime($info['create_time'])) . ' 充值成功 ' . $info['recharge_price'],
                 'scene_id' => 0,
                 'read' => 0,
                 'recipient' => 1,
@@ -509,46 +511,64 @@ class ConsumeRechargeLogic extends BaseLogic
                 return true;
             }
 
-            // 获取流水
-            $billInfo = UserMoneyLog::where('source_sn', $consumeRechargeInfo['sn'])->find();
-            if (empty($billInfo['id'])) {
-                self::setError('获取流水失败');
-                Db::rollback();
-                return false;
-            }
-
-            // 删除流水
-            $res = UserMoneyLog::destroy($billInfo['id']);
-            if (!$res) {
-                self::setError('回撤流水失败');
-                Db::rollback();
-                return false;
-            }
-
             // 返回用户余额
-            $res = User::where('id', $consumeRechargeInfo['user_id'])->inc('user_money', $consumeRechargeInfo['pay_price'])->update([
-                'update_time' => time()
-            ]);
+            $res = User::where('id', $consumeRechargeInfo['user_id'])
+                ->inc('user_money', $consumeRechargeInfo['pay_price'])
+                ->update([
+                    'update_time' => time()
+                ]);
             if (!$res) {
-                self::setError('返还扣除的用户余额失败');
+                self::setError('取消失败，返还用户支付金额失败');
                 Db::rollback();
                 return false;
             }
 
-            // 消费充值表
-            $userAccountData = [
-                'status' => 4,
-                'update_time' => time()
+            // 获取用户余额
+            $userInfo = User::where('id', $consumeRechargeInfo['user_id'])->find();
+
+            // 流水
+            $billType = '';
+            $billDesc = '';
+            switch ($consumeRechargeInfo['type']) {
+                case 1:
+                    $billType = 1;
+                    $billDesc = '话费充值失败返还';
+                    break;
+
+                case 2:
+                    $billType = 2;
+                    $billDesc = '电费充值失败返还';
+                    break;
+
+                case 3:
+                    $billType = 9;
+                    $billDesc = '话费快充充值失败返还';
+                    break;
+
+                case 4:
+                    $billType = 10;
+                    $billDesc = '礼品卡充值失败返还';
+                    break;
+            }
+
+            $billData = [
+                'user_id' => $consumeRechargeInfo['user_id'],
+                'type' => $billType,
+                'desc' => $billDesc,
+                'change_type' => 1,
+                'change_money' => $consumeRechargeInfo['pay_price'],
+                'changed_money' => $userInfo['user_money'],
+                'source_sn' => $consumeRechargeInfo['sn'],
             ];
 
-            $res = ConsumeRecharge::where('id', $id)->update($userAccountData);
-            if (empty($res)) {
-                self::setError('更改充值表失败');
+            $res = UserMoneyLog::create($billData);
+            if (empty($res['id'])) {
+                self::setError('取消失败，记录流水失败');
                 Db::rollback();
                 return false;
             }
 
-            // 流水描述
+            // 消息通知描述
             $desc = '';
             switch ($consumeRechargeInfo['type']) {
                 case 1:
@@ -572,7 +592,7 @@ class ConsumeRechargeLogic extends BaseLogic
             $noticeData = [
                 'user_id' => $consumeRechargeInfo['user_id'],
                 'title' => '订单充值失败提醒',
-                'content' => '您的' . $desc . '订单' . $consumeRechargeInfo['sn'] . '已于' . date('Y-m-d H:i', strtotime($consumeRechargeInfo['create_time'])) . '充值失败' . $consumeRechargeInfo['recharge_price'],
+                'content' => '您的' . $desc . '订单 ' . $consumeRechargeInfo['sn'] . ' 已于 ' . date('Y-m-d H:i') . ' 充值失败 ' . $consumeRechargeInfo['recharge_price'],
                 'scene_id' => 0,
                 'read' => 0,
                 'recipient' => 1,
@@ -582,8 +602,21 @@ class ConsumeRechargeLogic extends BaseLogic
             ];
 
             $res = NoticeRecord::create($noticeData);
-            if (empty($res)) {
+            if (!$res) {
                 self::setError('更新成功失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 消费充值表
+            $userAccountData = [
+                'status' => 4,
+                'update_time' => time()
+            ];
+
+            $res = ConsumeRecharge::where('id', $id)->update($userAccountData);
+            if (!$res) {
+                self::setError('更改充值表失败');
                 Db::rollback();
                 return false;
             }

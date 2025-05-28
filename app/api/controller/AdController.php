@@ -49,10 +49,10 @@ class AdController extends BaseApiController
                 ]);
             }
 
-            $userIds = array_unique(array_column($list, 'id'));
-            $totalData = AdOrderLogic::getCountData($userIds);
+            $adIds = array_unique(array_column($list, 'id'));
+            $totalData = AdOrderLogic::getCountData($adIds);
             $totalData = array_column($totalData, 'cou', 'ad_id');
-            $completeData = AdOrderLogic::getCountData($userIds, 4);
+            $completeData = AdOrderLogic::getCountData($adIds, 4);
             $completeData = array_column($completeData, 'cou', 'ad_id');
 
             $lastId = '';
@@ -339,7 +339,7 @@ class AdController extends BaseApiController
             if (empty($userInfo['id'])) {
                 return $this->fail('用户不存在');
             }
-            if (bccomp($userInfo['freeze_money'], $info['num'], 3) < 0) {
+            if (bccomp($userInfo['freeze_money'], $info['left_num'], 3) < 0) {
                 return $this->fail('返还的冻结金额不足');
             }
 
@@ -444,6 +444,49 @@ class AdController extends BaseApiController
 
         } catch (Exception $e) {
             Log::record('Exception: api-AdController-adOrderList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 30日内成交数量
+     *
+     * @return Json
+     */
+    public function thirtyCompleteData(): Json
+    {
+        try {
+
+            $adId = (string)$this->request->get('id');
+
+            $newData = [
+                'cou' => 0,
+                'rate' => 0,
+                'complete_time' => 0,
+                'pay_time' => 0,
+            ];
+
+            // 数量
+            $count = AdOrderLogic::geCompleteCount($adId);
+            if ($count == 0) {
+                return $this->success('', $newData);
+            }
+
+            $data = AdOrderLogic::geCompleteSumData($adId);
+            $newData['cou'] = $data['cou'] ?? 0;
+            $newData['rate'] = bcmul(bcdiv($newData['cou'], $count, 4), 100, 2);
+
+            $time = $data['time'] ?? 0;
+            $payTime = $data['pay_time'] ?? 0;
+            $completeTime = $data['complete_time'] ?? 0;
+
+            $newData['pay_time'] = !empty($time) && $payTime > $time ? bcdiv(bcsub($payTime, $time), 60, 2) : 0;
+            $newData['complete_time'] = !empty($time) && $completeTime > $time ? bcdiv(bcsub($completeTime, $time), 60, 2) : 0;
+
+            return $this->success('', $newData);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdController-thirtyCompleteData Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }

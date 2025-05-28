@@ -493,7 +493,7 @@ class ConsumeRechargeController extends BaseApiController
         $num = ConsumeRechargeLogic::getCountByMealId($newParams['meal_id'], $statusArr, $today);
         $num += 1;
         if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
-            return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
+            return $this->fail('暂时达到每日同时存在订单上限，请稍后再试');
         }
 
         if ($newParams['type'] == 1 || $newParams['type'] == 3) {
@@ -809,7 +809,7 @@ class ConsumeRechargeController extends BaseApiController
         $num = ConsumeRechargeLogic::getCountByMealId($params['meal_id'], $statusArr, $today);
         $num += $dataNum;
         if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
-            return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
+            return $this->fail('暂时达到每日同时存在订单上限，请稍后再试');
         }
 
         $msg = '';

@@ -315,8 +315,8 @@ EOT;
 
             // 返回冻结金额
             $res = User::where('id', $info['user_id'])
-                ->dec('freeze_money', $info['num'])
-                ->inc('user_money', $info['num'])
+                ->dec('freeze_money', $info['left_num'])
+                ->inc('user_money', $info['left_num'])
                 ->update([
                     'update_time' => time()
                 ]);
@@ -341,7 +341,7 @@ EOT;
                 'type' => 6,
                 'desc' => '交易广告删除退回余额',
                 'change_type' => 1,
-                'change_money' => $info['num'],
+                'change_money' => $info['left_num'],
                 'changed_money' => $userInfo['user_money']
             ];
 

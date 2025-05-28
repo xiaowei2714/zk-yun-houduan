@@ -54,23 +54,73 @@ class AdOrderLogic extends BaseLogic
     /**
      * 总数
      *
-     * @param $adId
+     * @param $adIds
      * @param $status
      * @return array|false
      */
-    public static function getCountData($adId, $status = '')
+    public static function getCountData($adIds, $status = '')
     {
         try {
             $obj = AdOrder::field([
                 'ad_id',
                 'count(*) as cou',
-            ])->whereIn('ad_id', $adId);
+            ])->whereIn('ad_id', $adIds);
 
             if (!empty($status)) {
                 $obj = $obj->where('status', '=', $status);
             }
 
             return $obj->group('ad_id')->select()->toArray();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-AdOrderLogic-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('获取数据异常');
+            return false;
+        }
+    }
+
+    /**
+     * 总数
+     *
+     * @param $adId
+     * @return false|int
+     */
+    public static function geCompleteCount($adId)
+    {
+        try {
+            $startTime = strtotime(date('Y-m-d 00:00:00', time() - 29 * 24 * 3600));
+
+            return AdOrder::where('ad_id', '=', $adId)
+                ->where('create_time', '>=', $startTime)
+                ->count();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-AdOrderLogic-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            self::setError('获取数据异常');
+            return false;
+        }
+    }
+
+    /**
+     * 总数
+     *
+     * @param $adId
+     * @return AdOrder|array|false|Model|null
+     */
+    public static function geCompleteSumData($adId)
+    {
+        try {
+            $startTime = strtotime(date('Y-m-d 00:00:00', time() - 29 * 24 * 3600));
+
+            return AdOrder::field([
+                'count(*) as cou',
+                'sum(`create_time`) as time',
+                'sum(`pay_time`) as pay_time',
+                'sum(`complete_time`) as complete_time'
+            ])->where('ad_id', '=', $adId)
+                ->where('create_time', '>=', $startTime)
+                ->where('status', '=', 4)
+                ->find();
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-AdOrderLogic-list Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
