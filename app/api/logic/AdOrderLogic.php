@@ -170,7 +170,7 @@ class AdOrderLogic extends BaseLogic
             }
 
             if (!empty($params['search'])) {
-                $obj = $obj->where($aliasD . 'oder_no', 'like', '%' . $params['search'] . '%');
+                $obj = $obj->where($aliasD . 'order_no', 'like', '%' . $params['search'] . '%');
             }
 
             if (!empty($params['last_id'])) {
