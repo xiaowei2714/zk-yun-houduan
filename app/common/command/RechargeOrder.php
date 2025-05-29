@@ -114,7 +114,7 @@ class RechargeOrder extends Command
                 // 检查金额(考虑代币小数位)
                 if (empty($payPrice)) {
                     $tmpNum = (string)pow(10, $value['token_info_decimals']);
-                    $payPrice = bcdiv($value['value'], $tmpNum, 6);
+                    $payPrice = bcdiv($value['value'], $tmpNum, 3);
                     RechargeApi::where('id', '=', $id)->update([
                         'pay_price' => $payPrice
                     ]);

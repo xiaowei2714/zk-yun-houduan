@@ -10,7 +10,6 @@ use app\api\logic\AdOrderLogic;
 use app\common\model\AdOrder;
 use think\queue\Job;
 use think\facade\Log;
-//use app\service\OrderService;
 
 class CancelOrder
 {

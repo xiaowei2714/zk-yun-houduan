@@ -8,7 +8,8 @@ use think\facade\Log;
 
 class ConsumeRechargeService
 {
-    const USE_MOCK = true;
+//    const USE_MOCK = true;
+    const USE_MOCK = false;
     protected array $header = [];
 
     /**

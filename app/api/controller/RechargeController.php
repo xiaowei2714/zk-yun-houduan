@@ -134,14 +134,14 @@ class RechargeController extends BaseApiController
             $decimalLength = 0;
             if (str_contains($strNumber, '.')) {
                 $dNum = substr($strNumber, strpos($strNumber, '.') + 1);
-                $decimalPart = bccomp($dNum, 0, 6) != 0 ? $dNum : '';
+                $decimalPart = bccomp($dNum, 0, 3) != 0 ? $dNum : '';
                 $decimalLength = strlen($decimalPart);
             }
 
             $key = '';
             $params['pay_money'] = '';
-            if ($decimalLength >= 6) {
-                $decimalPart = substr($decimalPart, 0, 6);
+            if ($decimalLength >= 3) {
+                $decimalPart = substr($decimalPart, 0, 3);
 
                 $strNumber = intval($strNumber) . '.' . $decimalPart;
 
@@ -154,7 +154,7 @@ class RechargeController extends BaseApiController
                 $params['pay_money'] = $strNumber;
             } else {
 
-                $padLength = 6 - $decimalLength;
+                $padLength = 3 - $decimalLength;
 
                 $maxNum = '';
                 $maxNum = str_pad($maxNum, $padLength, 9);

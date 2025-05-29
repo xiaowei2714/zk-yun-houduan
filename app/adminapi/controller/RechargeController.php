@@ -50,7 +50,7 @@ class RechargeController extends BaseAdminController
                 'month_sum' => '0.000',
             ];
 
-            $statusArr = [1,2,3];
+            $statusArr = [2];
             $data = RechargeLogic::getSum($statusArr);
             $newData['all_count'] = $data['cou'];
             if (!empty($data['sum'])) {
