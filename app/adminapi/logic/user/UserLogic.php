@@ -1,24 +1,14 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
+
 namespace app\adminapi\logic\user;
 
 use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\AccountLogLogic;
 use app\common\logic\BaseLogic;
-use app\common\model\ConsumeRecharge;
+use app\common\model\notice\NoticeRecord;
 use app\common\model\user\User;
+use app\common\model\UserMoneyLog;
 use think\facade\Db;
 use think\facade\Log;
 use think\Model;
@@ -135,11 +125,13 @@ class UserLogic extends BaseLogic
         try {
             $user = User::find($params['user_id']);
             if (AccountLogEnum::INC == $params['action']) {
+
                 //调整可用余额
                 $user->user_money += $params['num'];
                 $user->save();
+
                 //记录日志
-                AccountLogLogic::add(
+                $res = AccountLogLogic::add(
                     $user->id,
                     AccountLogEnum::UM_INC_ADMIN,
                     AccountLogEnum::INC,
@@ -147,11 +139,62 @@ class UserLogic extends BaseLogic
                     '',
                     $params['remark'] ?? ''
                 );
+
+                if (empty($res['id'])) {
+                    Log::record('Error: UserLogic-adjustUserMoney 保存记录日志异常');
+                    self::setError('保存记录日志异常');
+                    Db::rollback();
+                    return false;
+                }
+
+                $userInfo = User::where('id', $params['user_id'])->find();
+
+                // 流水
+                $billData = [
+                    'user_id' => $user->id,
+                    'type' => 5,
+                    'desc' => '后台充值余额',
+                    'change_type' => 1,
+                    'change_money' => $params['num'],
+                    'changed_money' => $userInfo['user_money']
+                ];
+
+                $res = UserMoneyLog::create($billData);
+                if (empty($res['id'])) {
+                    Log::record('Error: UserLogic-adjustUserMoney 保存流水异常');
+                    self::setError('保存流水异常');
+                    Db::rollback();
+                    return false;
+                }
+
+                // 消息通知
+                $noticeData = [
+                    'user_id' => $user->id,
+                    'title' => 'Y币充值成功提醒',
+                    'content' => '后台于 ' . date('Y-m-d H:i:s') . ' 成功充值余额 ' . $params['num'] . ' Y币',
+                    'scene_id' => 0,
+                    'read' => 0,
+                    'recipient' => 1,
+                    'send_type' => 1,
+                    'notice_type' => 1,
+                    'type' => 3
+                ];
+
+                $res = NoticeRecord::create($noticeData);
+                if (empty($res)) {
+                    Log::record('Error: UserLogic-adjustUserMoney 保存消息异常');
+                    self::setError('保存消息异常');
+                    Db::rollback();
+                    return false;
+                }
+
             } else {
+
                 $user->user_money -= $params['num'];
                 $user->save();
+
                 //记录日志
-                AccountLogLogic::add(
+                $res = AccountLogLogic::add(
                     $user->id,
                     AccountLogEnum::UM_DEC_ADMIN,
                     AccountLogEnum::DEC,
@@ -159,6 +202,54 @@ class UserLogic extends BaseLogic
                     '',
                     $params['remark'] ?? ''
                 );
+
+                if (empty($res['id'])) {
+                    Log::record('Error: UserLogic-adjustUserMoney 保存记录日志异常');
+                    self::setError('保存记录日志异常');
+                    Db::rollback();
+                    return false;
+                }
+
+                $userInfo = User::where('id', $params['user_id'])->find();
+
+                // 流水
+                $billData = [
+                    'user_id' => $user->id,
+                    'type' => 5,
+                    'desc' => '后台扣除余额',
+                    'change_type' => 2,
+                    'change_money' => $params['num'],
+                    'changed_money' => $userInfo['user_money']
+                ];
+
+                $res = UserMoneyLog::create($billData);
+                if (empty($res['id'])) {
+                    Log::record('Error: UserLogic-adjustUserMoney 保存流水异常');
+                    self::setError('保存流水异常');
+                    Db::rollback();
+                    return false;
+                }
+
+                // 消息通知
+                $noticeData = [
+                    'user_id' => $user->id,
+                    'title' => 'Y币充值扣除提醒',
+                    'content' => '后台于 ' . date('Y-m-d H:i:s') . ' 成功扣除余额 ' . $params['num'] . ' Y币',
+                    'scene_id' => 0,
+                    'read' => 0,
+                    'recipient' => 1,
+                    'send_type' => 1,
+                    'notice_type' => 1,
+                    'type' => 3
+                ];
+
+                $res = NoticeRecord::create($noticeData);
+                if (empty($res)) {
+                    Log::record('Error: UserLogic-adjustUserMoney 保存消息异常');
+                    self::setError('保存消息异常');
+                    Db::rollback();
+                    return false;
+                }
             }
 
             Db::commit();

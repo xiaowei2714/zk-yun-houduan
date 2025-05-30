@@ -16,6 +16,8 @@ namespace app\api\controller;
 
 use app\api\logic\IndexLogic;
 use app\api\logic\LoginLogic;
+use app\api\logic\MealLogic;
+use app\api\logic\UserMealLogic;
 use app\api\service\UserMealService;
 use app\api\service\UserTokenService;
 use app\common\cache\UserAccountSafeCache;
@@ -103,7 +105,6 @@ class IndexController extends BaseApiController
         if ($type > 0) {
             $where[] = ['type', '=', $type];
         }
-        $listQuery = UserMoneyLog::where($where);
 
         if ($date_type > 0) {
             if ($date_type == 1) {
@@ -116,19 +117,19 @@ class IndexController extends BaseApiController
                 $startTime = strtotime(date('Y-m-d 00:00:00', strtotime('-29 days')));
                 $endTime = strtotime(date('Y-m-d 23:59:59'));
             }
-            $listQuery->whereBetween('create_time', [$startTime, $endTime]);
+
+            $where[] = ['create_time', 'between', [$startTime, $endTime]];
         } else {
             if ($date) {
                 $startTime = strtotime($date . ' 00:00:00');
                 $endTime = strtotime($date . ' 23:59:59');
-                $listQuery->whereBetween('create_time', [$startTime, $endTime]);
+                $where[] = ['create_time', 'between', [$startTime, $endTime]];
             }
         }
 
-        $listQuery2 = $listQuery;
-        $listQuery3 = $listQuery;
-
         $limit = 10;
+
+        $listQuery = UserMoneyLog::where($where);
 
         if (!empty($lastId)) {
             $listQuery = $listQuery->where('id', '<', $lastId);
@@ -141,8 +142,8 @@ class IndexController extends BaseApiController
             $lastId = $value['id'];
         }
 
-        $shouru = $listQuery2->where('change_type', '=', 1)->sum('change_money');
-        $zhichu = $listQuery3->where('change_type', '=', 2)->sum('change_money');
+        $shouru = UserMoneyLog::where($where)->where('change_type', '=', 1)->sum('change_money');
+        $zhichu = UserMoneyLog::where($where)->where('change_type', '=', 2)->sum('change_money');
 
         return $this->success('', [
             'list' => $list,
@@ -1028,7 +1029,7 @@ class IndexController extends BaseApiController
             $password = create_password($postData['password'], $passwordSalt);
             $avatar = ConfigService::get('default_image', 'user_avatar');
 
-            User::create([
+            $res = User::create([
                 'sn' => $userSn,
                 'avatar' => $avatar,
                 'nickname' => '用户' . $userSn,
@@ -1040,6 +1041,29 @@ class IndexController extends BaseApiController
                 'p_second_user_id' => $p_second_user_id,
                 'p_three_user_id' => $p_three_user_id,
             ]);
+
+            if (empty($res['id'])) {
+                Db::rollback();
+                return $this->fail('注册失败');
+            }
+
+            // 我的注册上级为分站站长时，所有话费电费等折扣默认为10折
+            if (!empty($p_first_user_id)) {
+
+                $userMealLogic = new UserMealLogic();
+
+                // 获取套餐列表
+                $mealList = (new MealLogic())->getMealList();
+                if (!empty($mealList)) {
+                    foreach ($mealList as $value) {
+                        $tmpRes = $userMealLogic->addData($res['id'], $value['id'], 10);
+                        if (!$tmpRes) {
+                            Db::rollback();
+                            return $this->fail('注册设置套餐失败');
+                        }
+                    }
+                }
+            }
 
             Db::commit();
 

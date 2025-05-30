@@ -16,7 +16,7 @@ class AdValidate extends BaseValidate
         'num' => 'require|float|gt:0',
         'price' => 'require|float|gt:0',
         'min_price' => 'require|float|gt:0|lt:max_price',
-        'max_price' => 'require|float|gt:0',
+        'max_price' => 'require|float|gt:0|elt:num',
         'pay_time' => 'require|integer|egt:10|elt:30',
         'pay_type' => 'require',
         'type' => 'require|integer|egt:1|elt:2',

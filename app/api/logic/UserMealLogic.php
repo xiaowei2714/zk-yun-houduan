@@ -56,9 +56,10 @@ class UserMealLogic extends BaseLogic
     public function updateData($id, $discount): bool
     {
         try {
-            $res = UserMealDiscount::where('id', $id)->update([
-                'discount' => $discount
-            ]);
+            $res = UserMealDiscount::where('id', $id)
+                ->update([
+                    'discount' => $discount
+                ]);
 
             if (empty($res['id'])) {
                 self::setError('保存失败');

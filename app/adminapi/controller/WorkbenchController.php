@@ -75,15 +75,15 @@ class WorkbenchController extends BaseAdminController
         $totalConsumeRechargeData = ConsumeRechargeLogic::countSum();
 
         // 查询数据
-        $todayQueryData = ConsumeQueryLogic::countSum($todayTime);
-        $totalQueryData = ConsumeQueryLogic::countSum();
+//        $todayQueryData = ConsumeQueryLogic::countSum($todayTime);
+//        $totalQueryData = ConsumeQueryLogic::countSum();
 
         // 查询数据
         $todayUserData = UserLogic::count($todayTime);
         $totalUserData = UserLogic::count();
 
         // 充值额
-        $statusArr = [1, 2, 3];
+        $statusArr = [3];
         $todayRechargeData = RechargeLogic::getSum($statusArr, $todayTime);
         $totalRechargeData = RechargeLogic::getSum($statusArr);
 

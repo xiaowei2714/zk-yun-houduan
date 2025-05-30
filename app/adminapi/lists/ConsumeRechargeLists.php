@@ -34,7 +34,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
     {
         $alias = 'cr';
         $aliasD = $alias . '.';
-        $lists = ConsumeRecharge::field([
+        $obj = ConsumeRecharge::field([
             $aliasD . 'id as id',
             $aliasD . 'sn',
             $aliasD . 'user_id',
@@ -51,11 +51,12 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             $aliasD . 'pay_time',
             $aliasD . 'create_time',
             'u.nickname'
-        ])
-            ->alias($alias)
-            ->leftJoin('user u', $aliasD . 'user_id = u.id')
-            ->where($this->handleWhereData($this->params, $aliasD))
-            ->order($aliasD . 'id desc')
+        ])->alias($alias)
+            ->leftJoin('user u', $aliasD . 'user_id = u.id');
+
+        $obj = $this->handleWhereData($obj, $this->params, $aliasD);
+
+        $lists = $obj->order($aliasD . 'id desc')
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -133,7 +134,9 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
      */
     public function count(): int
     {
-        return ConsumeRecharge::where($this->handleWhereData($this->params))->count();
+        $obj = ConsumeRecharge::field('id');
+        $obj = $this->handleWhereData($obj, $this->params);
+        return $obj->count();
     }
 
     /**
@@ -141,7 +144,72 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
      */
     public function sum(): float
     {
-        return ConsumeRecharge::where($this->handleWhereData($this->params))->sum('recharge_price');
+        $obj = ConsumeRecharge::field('id');
+        $obj = $this->handleWhereData($obj, $this->params);
+        return $obj->sum('recharge_price');
+    }
+
+    /**
+     * @param $obj
+     * @param $params
+     * @param $pre
+     * @return mixed
+     */
+    private function handleWhereData($obj, $params, $pre = '')
+    {
+        if (isset($params['sn']) && $params['sn'] !== '' && $params['sn'] !== null) {
+            $obj = $obj->where($pre . 'sn', 'like', '%' . $params['sn'] . '%');
+        }
+
+        if (!empty($params['account'])) {
+            if (is_string($params['account'])) {
+                $obj = $obj->where($pre . 'account|name_area', 'like', '%' . $params['account'] . '%');
+            }
+
+            if (is_array($params['account'])) {
+                $accountParams = [];
+                foreach ($params['account'] as $value) {
+                    $tmp = trim($value);
+                    if (strpos($tmp, ' ') !== false) {
+                        $tmpData = explode(' ', $tmp);
+                        $accountParams = array_merge($accountParams, $tmpData);
+                    } else {
+                        $accountParams[] = $tmp;
+                    }
+                }
+
+                $accountParams = array_unique($accountParams);
+                $accountParams = array_values($accountParams);
+
+                $obj = $obj->where(function ($query) use($accountParams, $pre) {
+                    foreach ($accountParams as $key => $value) {
+                        if ($key == 0) {
+                            $query->where($pre . 'account|name_area', 'like', '%' .$value . '%');
+                        } else {
+                            $query->whereOr($pre . 'account|name_area', 'like', '%' . $value . '%');
+                        }
+                    }
+                });
+            }
+        }
+
+        if (!empty($params['status'])) {
+            $obj = $obj->where($pre . 'status', '=', $params['status']);
+        }
+
+        if (!empty($params['type'])) {
+            $obj = $obj->where($pre . 'type', '=', $params['type']);
+        }
+
+        if (!empty($params['start_time']) && !empty($params['end_time'])) {
+            $obj = $obj->where($pre . 'create_time', 'BETWEEN', [strtotime($params['start_time']), strtotime($params['end_time'])]);
+        }
+
+        if (!empty($params['account_type'])) {
+            $obj = $obj->where($pre . 'account_type', '=', $params['account_type']);
+        }
+
+        return $obj;
     }
 
     /**
@@ -149,7 +217,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
      * @param $pre
      * @return array
      */
-    private function handleWhereData($params, $pre = '')
+    private function handleWhereData1($params, $pre = '')
     {
         $newData = [];
         if (isset($params['sn']) && $params['sn'] !== '' && $params['sn'] !== null) {
@@ -158,10 +226,17 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             ];
         }
 
-        if (isset($params['account']) && $params['account'] !== '' && $params['account'] !== null) {
-            $newData[] = [
-                $pre . 'account|name_area', 'like', '%' . $params['account'] . '%'
-            ];
+        if (!empty($params['account'])) {
+            $tmpAccount = '';
+            if (is_string($params['account'])) {
+                $newData[] = [
+                    $pre . 'account|name_area', 'like', '%' . $params['account'] . '%'
+                ];
+            }
+
+            if (is_array($params['account'])) {
+
+            }
         }
 
         if (!empty($params['status'])) {
@@ -190,6 +265,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
 
         return $newData;
     }
+
 
     /**
      * @notes 导出文件名

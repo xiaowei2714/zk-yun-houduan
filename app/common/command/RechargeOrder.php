@@ -214,6 +214,7 @@ class RechargeOrder extends Command
             // 获取用户余额
             $userInfo = User::where('id', $rechargeInfo['user_id'])->find();
 
+            // 流水
             $billData = [
                 'user_id' => $rechargeInfo['user_id'],
                 'type' => 5,

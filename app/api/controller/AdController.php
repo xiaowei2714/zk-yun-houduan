@@ -181,6 +181,7 @@ class AdController extends BaseApiController
                 'pay_type' => explode(',', $info['pay_type']),
                 'status_b' => !($info['status'] == 1),
                 'type' => $info['type'],
+                'tips' => $info['tips'],
                 'zdjye2' => $info['max_price'] * $info['price'],
                 'zxjye' => $zxjye,
                 'zdjye' => $zdjye,
@@ -248,15 +249,35 @@ class AdController extends BaseApiController
             }
             $tmpPayType = [];
             if (in_array('wx', $payTypeParams)) {
+                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, 'wx');
+                if (empty($userPayTypeData['id'])) {
+                    return $this->fail('请先去我的-收款账户填写微信收款方式');
+                }
+
                 $tmpPayType[] = 'wx';
             }
             if (in_array('zfb', $payTypeParams)) {
+                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, 'zfb');
+                if (empty($userPayTypeData['id'])) {
+                    return $this->fail('请先去我的-收款账户填写支付宝收款方式');
+                }
+
                 $tmpPayType[] = 'zfb';
             }
             if (in_array('yhk', $payTypeParams)) {
+                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, 'yhk');
+                if (empty($userPayTypeData['id'])) {
+                    return $this->fail('请先去我的-收款账户填写银行卡收款方式');
+                }
+
                 $tmpPayType[] = 'yhk';
             }
             if (in_array('usdt', $payTypeParams)) {
+                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, 'usdt');
+                if (empty($userPayTypeData['id'])) {
+                    return $this->fail('请先去我的-收款账户填写USDT收款方式');
+                }
+
                 $tmpPayType[] = 'usdt';
             }
 
@@ -591,27 +612,6 @@ class AdController extends BaseApiController
         ]);
 
         try {
-            if ($params['pay_type'] == 'wx') {
-                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, $params['pay_type']);
-                if (empty($userPayTypeData['id'])) {
-                    return $this->fail('请先完善微信收款信息');
-                }
-            } elseif ($params['pay_type'] == 'zfb') {
-                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, $params['pay_type']);
-                if (empty($userPayTypeData['id'])) {
-                    return $this->fail('请先完善支付宝收款信息');
-                }
-            } elseif ($params['pay_type'] == 'yhk') {
-                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, $params['pay_type']);
-                if (empty($userPayTypeData['id'])) {
-                    return $this->fail('请先完善银行卡收款信息');
-                }
-            } elseif ($params['pay_type'] == 'usdt') {
-                $userPayTypeData = UserPayTypeLogic::infoByType($this->userId, $params['pay_type']);
-                if (empty($userPayTypeData['id'])) {
-                    return $this->fail('请先完善USDT收款信息');
-                }
-            }
 
             // 广告详情
             $info = AdLogic::info($params['id']);
@@ -622,7 +622,7 @@ class AdController extends BaseApiController
                 return $this->fail('广告已下架');
             }
             if ($info['user_id'] == $this->userId) {
-//                return $this->fail('不支持向自己的订单下单');
+                return $this->fail('不支持向自己的订单下单');
             }
 
             $minMoney = bcmul($info['min_price'], $info['price'], 2);
@@ -641,9 +641,6 @@ class AdController extends BaseApiController
             }
 
             $buyNum = number_format(bcdiv($params['price'], $info['price'], 4), 3);
-            if (bccomp($userInfo['freeze_money'], $buyNum, 3) < 0) {
-                return $this->fail('您的冻结余额不足');
-            }
             if (bccomp($buyNum, $info['left_num'], 3) > 0) {
                 return $this->fail('购买数量超过卖家可卖数量，卖家当前可卖数量为：' . $info['num']);
             }

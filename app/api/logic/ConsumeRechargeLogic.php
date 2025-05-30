@@ -213,25 +213,29 @@ class ConsumeRechargeLogic extends BaseLogic
             // 流水
             $billType = '';
             $billDesc = '';
+
+            $rechargePriceStr = (string)$params['recharge_price']; // 转换为字符串
+            $rechargePriceStr = preg_replace('/\.?0*$/', '$1', $rechargePriceStr); // 使用正则表达式移除尾部的0和.
+
             switch ($params['type']) {
                 case 1:
                     $billType = 1;
-                    $billDesc = '话费充值扣除';
+                    $billDesc = $params['account'] . '充值' . $rechargePriceStr . '话费';;
                     break;
 
                 case 2:
                     $billType = 2;
-                    $billDesc = '电费充值扣除';
+                    $billDesc = $params['account'] . '充值' . $rechargePriceStr . '电费';
                     break;
 
                 case 3:
                     $billType = 9;
-                    $billDesc = '话费快充充值扣除';
+                    $billDesc = $params['account'] . '充值' . $rechargePriceStr . '话费快充';
                     break;
 
                 case 4:
                     $billType = 10;
-                    $billDesc = '礼品卡充值扣除';
+                    $billDesc = '礼品卡购买' . $rechargePriceStr;
                     break;
             }
 
@@ -438,25 +442,29 @@ class ConsumeRechargeLogic extends BaseLogic
             // 流水
             $billType = '';
             $billDesc = '';
+
+            $rechargePriceStr = (string)$info['recharge_price']; // 转换为字符串
+            $rechargePriceStr = preg_replace('/\.?0*$/', '$1', $rechargePriceStr); // 使用正则表达式移除尾部的0和.
+
             switch ($info['type']) {
                 case 1:
                     $billType = 1;
-                    $billDesc = '用户取消话费充值返还';
+                    $billDesc = $info['account'] . '充值' . $rechargePriceStr . '话费取消';;
                     break;
 
                 case 2:
                     $billType = 2;
-                    $billDesc = '用户取消电费充值返还';
+                    $billDesc = $info['account'] . '充值' . $rechargePriceStr . '电费取消';
                     break;
 
                 case 3:
                     $billType = 9;
-                    $billDesc = '用户取消话费快充充值返还';
+                    $billDesc = $info['account'] . '充值' . $rechargePriceStr . '话费快充取消';
                     break;
 
                 case 4:
                     $billType = 10;
-                    $billDesc = '用户取消礼品卡充值返还';
+                    $billDesc = '礼品卡购买' . $rechargePriceStr . '取消';
                     break;
             }
 

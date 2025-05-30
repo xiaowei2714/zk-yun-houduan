@@ -27,10 +27,20 @@ class UserAccountLogLogic extends BaseLogic
     public static function transferlist($userId)
     {
         try {
-            return UserAccountLog::field('change_amount,create_time')
-                ->where('user_id', $userId)
-                ->where('change_type', AccountLogEnum::UM_DEC_TRANSFER)
-                ->order('id desc')
+
+            $alias = 'ual';
+            $aliasD = $alias . '.';
+
+            return UserAccountLog::field([
+                'u.sn as u_sn',
+                $aliasD . 'change_amount',
+                $aliasD . 'create_time'
+            ])->alias($alias)
+                ->leftJoin('user u', $aliasD . 'source_user_id = u.id')
+                ->where($aliasD . 'user_id', $userId)
+                ->where($aliasD . 'change_type', AccountLogEnum::UM_DEC_TRANSFER)
+                ->whereNotNull($aliasD . 'source_user_id')
+                ->order($aliasD . 'id desc')
                 ->limit(100)
                 ->select()
                 ->toArray();
@@ -74,7 +84,7 @@ class UserAccountLogLogic extends BaseLogic
             }
 
             $sn = generate_sn(UserAccountLog::class, 'sn');
-            $outDesc =  '向账户ID：' . $params['change_user_sn'] . '转账';
+            $outDesc = '向账户ID：' . $params['change_user_sn'] . '转账';
             $changedMoney = $userInfo['user_money'];
             $userSn = $userInfo['sn'];
 

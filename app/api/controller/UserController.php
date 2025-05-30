@@ -328,7 +328,7 @@ class UserController extends BaseApiController
                 return $this->success('', $newData);
             }
 
-            // 获取用户列表
+            // 获取用户折扣
             $userMealList = (new UserMealLogic())->getMealList($userId);
             if (!empty($userMealList)) {
                 $userMealList = array_column($userMealList, null, 'meal_id');
@@ -344,11 +344,13 @@ class UserController extends BaseApiController
                     $typeShow = '话费快充';
                 }
 
+                $discount = isset($userMealList[$value['id']]) ? $userMealList[$value['id']]['discount'] : $value['discount'];
+
                 $newData[] = [
                     'id' => $value['id'],
                     'name' => $value['name'],
                     'type' => $typeShow,
-                    'discount' => isset($userMealList[$value['id']]) ? $userMealList[$value['id']]['discount'] : $value['discount']
+                    'discount' => preg_replace('/\.?0*$/', '$1', $discount) // 使用正则表达式移除尾部的0和.
                 ];
             }
 
@@ -410,7 +412,13 @@ class UserController extends BaseApiController
 
             $userMealLogic = new UserMealLogic();
 
-            // 获取用户列表
+            // 获取当前用户折扣
+            $curUserMealList = $userMealLogic->getMealList($this->userId);
+            if (!empty($curUserMealList)) {
+                $curUserMealList = array_column($curUserMealList, 'discount', 'meal_id');
+            }
+
+            // 获取用户折扣
             $userMealList = $userMealLogic->getMealList($params['user_id']);
             if (!empty($userMealList)) {
                 $userMealList = array_column($userMealList, null, 'meal_id');
@@ -431,10 +439,16 @@ class UserController extends BaseApiController
                     $typeShow = '话费快充';
                 }
 
+                $tmpCurUserMeal = $curUserMealList[$value['id']] ?? 10;
+                if (bccomp($tmpCurUserMeal,  $paramsList[$value['id']], 3) > 0) {
+                    $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：最低折扣不能超过' . preg_replace('/\.?0*$/', '$1', $tmpCurUserMeal) . '折'. PHP_EOL;
+                    continue;
+                }
+
                 if (!isset($userMealList[$value['id']])) {
                     $res = $userMealLogic->addData($params['user_id'], $value['id'], $paramsList[$value['id']]);
                     if (!$res) {
-                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError();
+                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError() . PHP_EOL;
                     }
 
                     continue;
@@ -447,18 +461,19 @@ class UserController extends BaseApiController
                 } else {
                     $res = $userMealLogic->updateData($userMealId, $paramsList[$value['id']]);
                     if (!$res) {
-                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError();
+                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError(). PHP_EOL;
                     }
                 }
             }
 
             if ($failMsg != '') {
-                return $this->fail(UserLogic::getError());
+                return $this->fail($failMsg);
             }
 
             return $this->success('更新成功');
 
         } catch (Exception $e) {
+            var_dump( $e->getMessage());
             Log::record('Exception: api-UserController-setFriendDiscount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }

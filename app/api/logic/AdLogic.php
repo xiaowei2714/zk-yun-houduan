@@ -144,6 +144,7 @@ EOT;
                 $aliasD . 'pay_time',
                 $aliasD . 'pay_type',
                 $aliasD . 'type',
+                $aliasD . 'tips',
                 'u.nickname',
             ])
                 ->alias($alias)

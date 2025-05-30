@@ -16,6 +16,7 @@ namespace app\adminapi\lists\user;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\lists\ListsExcelInterface;
+use app\common\model\ConsumeRecharge;
 use app\common\model\user\User;
 
 
@@ -51,18 +52,69 @@ class UserLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function lists(): array
     {
-        $field = "id,sn,nickname,sex,avatar,account,mobile,channel,create_time,p_first_user_id,user_money";
+        $field = "id,sn,nickname,sex,avatar,account,mobile,channel,create_time,p_first_user_id,user_money,freeze_money";
         $lists = User::withSearch($this->setSearch(), $this->params)
             ->limit($this->limitOffset, $this->limitLength)
             ->field($field)
             ->order('id desc')
             ->select()->toArray();
 
+        $userIds = [];
+        $pFirstUserIds = [];
+        foreach ($lists as $item) {
+            $userIds[] = $item['id'];
+            $pFirstUserIds[] = $item['p_first_user_id'];
+        }
+
+        $userIds = array_unique($userIds);
+        $pFirstUserIds = array_unique($pFirstUserIds);
+
+        // 获取上级
+        $pUserData = User::field('id,nickname')->whereIn('id', $pFirstUserIds)->select()->toArray();
+        $pUserData = array_column($pUserData, 'nickname', 'id');
+
+        // 获取下级数量
+        $nUserData = User::field([
+            'p_first_user_id',
+            'count(`id`) as cou'
+        ])->whereIn('p_first_user_id', $userIds)
+            ->group('p_first_user_id')
+            ->select()
+            ->toArray();
+
+        $nUserData = array_column($nUserData, 'cou', 'p_first_user_id');
+
+        // 获取今日消费
+        $todayData = ConsumeRecharge::field([
+            'user_id',
+            'sum(`pay_price`) as pay_price'
+        ])->whereIn('user_id', $userIds)
+            ->where('status', 3)
+            ->where('create_time', '>=', strtotime(date('Y-m-d 00:00:00')))
+            ->group('user_id')
+            ->select()
+            ->toArray();
+
+        $todayData = array_column($todayData, 'pay_price', 'user_id');
+
+        // 获取总消费
+        $totalData = ConsumeRecharge::field([
+            'user_id',
+            'sum(`pay_price`) as pay_price'
+        ])->whereIn('user_id', $userIds)
+            ->where('status', 3)
+            ->group('user_id')
+            ->select()
+            ->toArray();
+
+        $totalData = array_column($totalData, 'pay_price', 'user_id');
+
         foreach ($lists as &$item) {
-            $item['channel'] = UserTerminalEnum::getTermInalDesc($item['channel']);
-            $parent_user = User::find($item['p_first_user_id']);
-            $item['parent_user'] = $parent_user['nickname'] ?? '暂无';
-            $item['subordinate_user'] = 0;
+//            $item['channel'] = UserTerminalEnum::getTermInalDesc($item['channel']);
+            $item['parent_user'] = $pUserData[$item['p_first_user_id']] ?? '暂无';
+            $item['subordinate_user'] = $nUserData[$item['id']] ?? 0;
+            $item['today_price'] = $todayData[$item['id']] ?? 0;
+            $item['total_price'] = $totalData[$item['id']] ?? 0;
         }
 
         return $lists;

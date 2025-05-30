@@ -529,25 +529,29 @@ class ConsumeRechargeLogic extends BaseLogic
             // 流水
             $billType = '';
             $billDesc = '';
+
+            $rechargePriceStr = (string)$consumeRechargeInfo['recharge_price']; // 转换为字符串
+            $rechargePriceStr = preg_replace('/\.?0*$/', '$1', $rechargePriceStr); // 使用正则表达式移除尾部的0和.
+
             switch ($consumeRechargeInfo['type']) {
                 case 1:
                     $billType = 1;
-                    $billDesc = '话费充值失败返还';
+                    $billDesc = $consumeRechargeInfo['account'] . '充值' . $rechargePriceStr . '话费失败';
                     break;
 
                 case 2:
                     $billType = 2;
-                    $billDesc = '电费充值失败返还';
+                    $billDesc = $consumeRechargeInfo['account'] . '充值' . $rechargePriceStr . '电费失败';
                     break;
 
                 case 3:
                     $billType = 9;
-                    $billDesc = '话费快充充值失败返还';
+                    $billDesc = $consumeRechargeInfo['account'] . '充值' . $rechargePriceStr . '话费快充失败';
                     break;
 
                 case 4:
                     $billType = 10;
-                    $billDesc = '礼品卡充值失败返还';
+                    $billDesc = '礼品卡购买' . $rechargePriceStr . '失败';
                     break;
             }
 

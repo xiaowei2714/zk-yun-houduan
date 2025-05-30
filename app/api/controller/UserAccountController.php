@@ -43,6 +43,7 @@ class UserAccountController extends BaseApiController
             $newData = [];
             foreach ($list as $value) {
                 $tmpData = [
+                    'u_sn' => $value['u_sn'],
                     'money' => $value['change_amount'],
                     'time' => $value['create_time']
                 ];
