@@ -956,9 +956,6 @@ class ConsumeRechargeController extends BaseApiController
             if ($info['user_id'] != $this->userId) {
                 return $this->fail('更新失败，获取不到该订单');
             }
-            if ($info['status'] != 3) {
-                return $this->fail('更新失败，订单未充值成功');
-            }
 
             if ($info['type'] == 1 || $info['type'] == 3) {
                 $queryPrice = WebSettingLogic::getQueryPhone();

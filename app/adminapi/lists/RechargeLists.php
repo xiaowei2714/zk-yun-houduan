@@ -45,10 +45,12 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
             $aliasD . 'hash',
             $aliasD . 'status',
             $aliasD . 'create_time',
+            'a.name as admin_name',
             'u.nickname'
         ])
             ->alias($alias)
             ->leftJoin('user u', $aliasD . 'user_id = u.id')
+            ->leftJoin('admin a', $aliasD . 'set_success_admin_id = a.id')
             ->where($this->handleWhereData($this->params, $aliasD))
             ->limit($this->limitOffset, $this->limitLength)
             ->order([$aliasD . 'id' => 'desc'])
@@ -65,6 +67,7 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
                 'desc' => $value['desc'],
                 'order_no' => $value['order_no'],
                 'pay_time' => !empty($value['pay_time']) ? date('Y-m-d H:i:s', $value['pay_time']) : '',
+                'set_success_admin' => $value['admin_name'],
                 'hash' => $value['hash'],
                 'status' => $value['status'],
                 'create_time' => $value['create_time'],

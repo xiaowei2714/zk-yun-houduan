@@ -180,13 +180,15 @@ class ConsumeRechargeLogic extends BaseLogic
      * 设置为充值中
      *
      * @param $id
+     * @param $adminId
      * @return bool
      */
-    public static function setRecharging($id): bool
+    public static function setRecharging($id, $adminId): bool
     {
         try {
             $data = [
                 'status' => 2,
+                'admin_id' => $adminId,
                 'update_time' => time()
             ];
 
@@ -205,13 +207,15 @@ class ConsumeRechargeLogic extends BaseLogic
      * 设置为批量充值中
      *
      * @param $ids
+     * @param $adminId
      * @return bool
      */
-    public static function setBatchRecharging($ids): bool
+    public static function setBatchRecharging($ids, $adminId): bool
     {
         try {
             $data = [
                 'status' => 2,
+                'admin_id' => $adminId,
                 'update_time' => time()
             ];
 
@@ -231,9 +235,10 @@ class ConsumeRechargeLogic extends BaseLogic
      *
      * @param $info
      * @param $ratioData
+     * @param $adminId
      * @return bool
      */
-    public static function setSuccess($info, $ratioData): bool
+    public static function setSuccess($info, $ratioData, $adminId): bool
     {
         try {
             Db::startTrans();
@@ -445,6 +450,7 @@ class ConsumeRechargeLogic extends BaseLogic
 
             $data = [
                 'status' => 3,
+                'admin_id' => $adminId,
                 'balances_price' => $info['recharge_price'],
                 'pay_time' => time(),
                 'update_time' => time()
@@ -496,7 +502,7 @@ class ConsumeRechargeLogic extends BaseLogic
      * @param $id
      * @return bool
      */
-    public static function setFail($id): bool
+    public static function setFail($id, $adminId): bool
     {
         try {
             Db::startTrans();
@@ -615,6 +621,7 @@ class ConsumeRechargeLogic extends BaseLogic
             // 消费充值表
             $userAccountData = [
                 'status' => 4,
+                'admin_id' => $adminId,
                 'update_time' => time()
             ];
 

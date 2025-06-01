@@ -73,7 +73,7 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败，当前状态为已失败');
             }
 
-            $res = ConsumeRechargeLogic::setRecharging($info['id']);
+            $res = ConsumeRechargeLogic::setRecharging($info['id'], $this->adminId);
 
             if (!$res) {
                 return $this->fail('设置失败');
@@ -125,7 +125,7 @@ class ConsumeRechargeController extends BaseAdminController
             }
 
             if (!empty($updateIds)) {
-                $res = ConsumeRechargeLogic::setBatchRecharging($updateIds);
+                $res = ConsumeRechargeLogic::setBatchRecharging($updateIds, $this->adminId);
                 if (!$res) {
                     return $this->fail('批量设置失败');
                 }
@@ -219,7 +219,7 @@ class ConsumeRechargeController extends BaseAdminController
                 $ratioData['three_ratio'] = $confData['card_three_ratio'] ?? '';
             }
 
-            $res = ConsumeRechargeLogic::setSuccess($info, $ratioData);
+            $res = ConsumeRechargeLogic::setSuccess($info, $ratioData, $this->adminId);
             if (!$res) {
                 return $this->fail('设置失败');
             }
@@ -315,7 +315,7 @@ class ConsumeRechargeController extends BaseAdminController
                     $ratioData['three_ratio'] = $confData['card_three_ratio'] ?? '';
                 }
 
-                $res = ConsumeRechargeLogic::setSuccess($value, $ratioData);
+                $res = ConsumeRechargeLogic::setSuccess($value, $ratioData, $this->adminId);
                 if (!$res) {
                     $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
                 }
@@ -360,7 +360,7 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败，当前状态为已成功');
             }
 
-            $res = ConsumeRechargeLogic::setFail($info['id']);
+            $res = ConsumeRechargeLogic::setFail($info['id'], $this->adminId);
             if (!$res) {
                 return $this->fail(ConsumeRechargeLogic::getError());
             }
@@ -402,7 +402,7 @@ class ConsumeRechargeController extends BaseAdminController
                     continue;
                 }
 
-                $res = ConsumeRechargeLogic::setFail($value['id']);
+                $res = ConsumeRechargeLogic::setFail($value['id'], $this->adminId);
                 if (!$res) {
                     $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
                 }

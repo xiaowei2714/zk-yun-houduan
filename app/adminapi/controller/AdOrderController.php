@@ -1,26 +1,14 @@
 <?php
-// +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
-// +----------------------------------------------------------------------
-
 
 namespace app\adminapi\controller;
 
-
-use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\AdOrderLists;
 use app\adminapi\logic\AdOrderLogic;
 use app\adminapi\validate\AdOrderValidate;
-
+use app\api\logic\AdLogic;
+use think\facade\Log;
+use think\response\Json;
+use Exception;
 
 /**
  * AdOrder控制器
@@ -29,7 +17,6 @@ use app\adminapi\validate\AdOrderValidate;
  */
 class AdOrderController extends BaseAdminController
 {
-
 
     /**
      * @notes 获取列表
@@ -104,5 +91,110 @@ class AdOrderController extends BaseAdminController
         return $this->data($result);
     }
 
+    /**
+     * 完成订单
+     *
+     * @return Json
+     */
+    public function completeOrder(): Json
+    {
+        $params = (new AdOrderValidate())->post()->goCheck('detail');
 
+        try {
+
+            $res = AdOrderLogic::completeOrder($params['id'], $this->adminId);
+            if (!$res) {
+                return $this->fail(AdLogic::getError());
+            }
+
+            return $this->success('操作成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdOrderController-cancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 完成订单
+     *
+     * @return Json
+     */
+    public function batchCompleteOrder(): Json
+    {
+        $params = (new AdOrderValidate())->post()->goCheck('detail');
+
+        try {
+            $failMsg = '';
+            foreach ($params['id'] as $id) {
+                $res = AdOrderLogic::completeOrder($id, $this->adminId);
+                if (!$res) {
+                    $failMsg .= AdLogic::getError() . PHP_EOL;
+                }
+            }
+
+            if (!empty($failMsg)) {
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('操作成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdOrderController-batchCancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 取消订单
+     *
+     * @return Json
+     */
+    public function cancelOrder(): Json
+    {
+        $params = (new AdOrderValidate())->post()->goCheck('detail');
+
+        try {
+            $res = AdOrderLogic::cancelOrder($params['id'], $this->adminId);
+            if (!$res) {
+                return $this->fail(AdLogic::getError());
+            }
+
+            return $this->success('操作成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdOrderController-cancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 取消订单
+     *
+     * @return Json
+     */
+    public function batchCancelOrder(): Json
+    {
+        $params = (new AdOrderValidate())->post()->goCheck('detail');
+
+        try {
+            $failMsg = '';
+            foreach ($params['id'] as $id) {
+                $res = AdOrderLogic::cancelOrder($id, $this->adminId);
+                if (!$res) {
+                    $failMsg .= AdLogic::getError() . PHP_EOL;
+                }
+            }
+
+            if (!empty($failMsg)) {
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('操作成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdOrderController-batchCancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
 }

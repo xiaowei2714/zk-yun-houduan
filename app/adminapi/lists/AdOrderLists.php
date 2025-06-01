@@ -56,21 +56,35 @@ class AdOrderLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        $list = AdOrder::where($this->searchWhere)
-            ->field(['id', 'user_id', 'to_user_id', 'ad_id', 'order_no', 'order_type', 'num', 'price', 'dan_price', 'pay_type', 'status', 'appeal', 'create_time', 'cancel_type'])
+        $alias = 'ad';
+        $aliasD = $alias . '.';
+        return AdOrder::where($this->searchWhere)
+            ->field([
+                $aliasD . 'id',
+                $aliasD . 'user_id',
+                $aliasD . 'to_user_id',
+                $aliasD .  'ad_id',
+                $aliasD .  'order_no',
+                $aliasD .  'order_type',
+                $aliasD .  'num',
+                $aliasD . 'price',
+                $aliasD . 'dan_price',
+                $aliasD . 'pay_type',
+                $aliasD .  'status',
+                $aliasD .  'appeal',
+                $aliasD . 'create_time',
+                $aliasD . 'cancel_type',
+                'a.name as admin_name',
+                'u.nickname as username',
+                'uu.nickname as to_username',
+            ])->alias($alias)
+            ->leftJoin('user u', $aliasD . 'user_id = u.id')
+            ->leftJoin('user uu', $aliasD . 'to_user_id = uu.id')
+            ->leftJoin('admin a', $aliasD . 'admin_id = a.id')
             ->limit($this->limitOffset, $this->limitLength)
             ->order(['id' => 'desc'])
             ->select()
             ->toArray();
-
-        foreach ($list as &$item) {
-            $user = User::find($item['user_id']);
-            $item['username'] = $user['nickname'] ?? '未知';
-            $toUser = User::find($item['to_user_id']);
-            $item['to_username'] = $toUser['nickname'] ?? '未知';
-        }
-
-        return $list;
     }
 
 

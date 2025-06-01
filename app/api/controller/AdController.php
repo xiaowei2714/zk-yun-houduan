@@ -764,19 +764,7 @@ class AdController extends BaseApiController
 
         try {
 
-            // 广告订单详情
-            $info = AdOrderLogic::info($params['id']);
-            if (empty($info['id'])) {
-                return $this->fail('广告不存在');
-            }
-            if ($info['to_user_id'] != $this->userId) {
-                return $this->fail('获取数据异常');
-            }
-            if ($info['status'] != 2) {
-                return $this->fail('当前订单状态不允许确认收款');
-            }
-
-            $res = AdOrderLogic::completeOrder($info);
+            $res = AdOrderLogic::completeOrder($params['id'], $this->userId);
             if (!$res) {
                 return $this->fail(AdLogic::getError());
             }
@@ -802,19 +790,7 @@ class AdController extends BaseApiController
 
         try {
 
-            // 广告订单详情
-            $info = AdOrderLogic::info($params['id']);
-            if (empty($info['id'])) {
-                return $this->fail('广告不存在');
-            }
-            if ($info['user_id'] != $this->userId) {
-                return $this->fail('获取数据异常');
-            }
-            if ($info['status'] != 1 && $info['status'] != 2) {
-                return $this->fail('当前订单状态不允许取消');
-            }
-
-            $res = AdOrderLogic::cancelOrder($info);
+            $res = AdOrderLogic::cancelOrder($params['id'], $this->userId);
             if (!$res) {
                 return $this->fail(AdLogic::getError());
             }

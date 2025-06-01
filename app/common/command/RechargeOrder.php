@@ -166,6 +166,11 @@ class RechargeOrder extends Command
                 Db::rollback();
                 return false;
             }
+            if ($rechargeInfo['status'] == 2) {
+                Log::record('Error: command-RechargeOrder-' . $this->flag . ' setSuccess msg: 当前订单已充值成功，充值订单ID【' . $rechargeId . '】订单');
+                Db::rollback();
+                return false;
+            }
 
             // 更新充值表
             $rechargeParams = [

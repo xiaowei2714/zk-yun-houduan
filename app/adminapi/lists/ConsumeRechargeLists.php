@@ -50,9 +50,11 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             $aliasD . 'type',
             $aliasD . 'pay_time',
             $aliasD . 'create_time',
+            'a.name as admin_name',
             'u.nickname'
         ])->alias($alias)
-            ->leftJoin('user u', $aliasD . 'user_id = u.id');
+            ->leftJoin('user u', $aliasD . 'user_id = u.id')
+            ->leftJoin('admin a', $aliasD . 'admin_id = a.id');
 
         $obj = $this->handleWhereData($obj, $this->params, $aliasD);
 
@@ -107,6 +109,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             $newData[] = [
                 'id' => $item['id'],
                 'sn' => $item['sn'],
+                'admin_name' => $item['admin_name'],
                 'user_show' => '[ID: ' . $item['user_id'] . '] ' . $item['nickname'],
                 'account_show' => $item['account'],
                 'account_type_show' => $accountTypeShow,
@@ -181,10 +184,10 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
                 $accountParams = array_unique($accountParams);
                 $accountParams = array_values($accountParams);
 
-                $obj = $obj->where(function ($query) use($accountParams, $pre) {
+                $obj = $obj->where(function ($query) use ($accountParams, $pre) {
                     foreach ($accountParams as $key => $value) {
                         if ($key == 0) {
-                            $query->where($pre . 'account|name_area', 'like', '%' .$value . '%');
+                            $query->where($pre . 'account|name_area', 'like', '%' . $value . '%');
                         } else {
                             $query->whereOr($pre . 'account|name_area', 'like', '%' . $value . '%');
                         }

@@ -471,10 +471,38 @@ class AdOrderLogic extends BaseLogic
      * @param $adOrderInfo
      * @return bool
      */
-    public static function completeOrder($adOrderInfo)
+    public static function completeOrder($id, $operUserId)
     {
         try {
             Db::startTrans();
+
+            // 广告订单详情
+            $adOrderInfo = self::info($id);
+            if (empty($adOrderInfo['id'])) {
+                self::setError('确认收款失败，订单不存在');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['to_user_id'] != $operUserId) {
+                self::setError('确认收款失败，订单不存在');
+                Db::rollback();
+                return false;
+            }
+            if ((int)$adOrderInfo['status'] < 0 || (int)$adOrderInfo['status'] > 5) {
+                self::setError('确认收款失败，订单状态异常');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 4) {
+                self::setError('确认收款失败，当前订单已完成');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 5) {
+                self::setError('确认收款失败，当前订单已取消');
+                Db::rollback();
+                return false;
+            }
 
             // 增加用户余额
             $res = User::where('id', $adOrderInfo['user_id'])
@@ -588,10 +616,38 @@ class AdOrderLogic extends BaseLogic
      * @param $isUserOper
      * @return bool
      */
-    public static function cancelOrder($adOrderInfo, $isUserOper = true)
+    public static function cancelOrder($id, $operUserId = null)
     {
         try {
             Db::startTrans();
+
+            // 广告订单详情
+            $adOrderInfo = self::info($id);
+            if (empty($adOrderInfo['id'])) {
+                self::setError('取消失败，订单不存在');
+                Db::rollback();
+                return false;
+            }
+            if ($operUserId != null && $adOrderInfo['user_id'] != $operUserId) {
+                self::setError('取消失败，订单不存在');
+                Db::rollback();
+                return false;
+            }
+            if ((int)$adOrderInfo['status'] < 0 || (int)$adOrderInfo['status'] > 5) {
+                self::setError('取消失败，订单状态异常');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 4) {
+                self::setError('取消失败，当前订单已完成');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 5) {
+                self::setError('取消失败，当前订单已取消');
+                Db::rollback();
+                return false;
+            }
 
             // 返还用户余额
             $res = User::where('id', $adOrderInfo['user_id'])
@@ -601,7 +657,7 @@ class AdOrderLogic extends BaseLogic
                 ]);
 
             if (!$res) {
-                self::setError('设置失败，返还用户冻结资产失败');
+                self::setError('取消失败，返还用户冻结资产失败');
                 Db::rollback();
                 return false;
             }
@@ -622,7 +678,7 @@ class AdOrderLogic extends BaseLogic
 
             $res = UserMoneyLog::create($billData);
             if (empty($res['id'])) {
-                self::setError('设置失败，记录流水失败');
+                self::setError('取消失败，记录流水失败');
                 Db::rollback();
                 return false;
             }
@@ -635,7 +691,7 @@ class AdOrderLogic extends BaseLogic
                 ]);
 
             if (!$res) {
-                self::setError('设置失败，返还广告剩余额度失败');
+                self::setError('取消失败，返还广告剩余额度失败');
                 Db::rollback();
                 return false;
             }
@@ -663,7 +719,7 @@ class AdOrderLogic extends BaseLogic
 
             $params = [
                 'status' => 5,
-                'cancel_type' => $isUserOper ? 2 : 1,
+                'cancel_type' => !empty($operUserId) ? 2 : 1,
                 'cancel_time' => time(),
                 'update_time' => time()
             ];

@@ -5,6 +5,7 @@ namespace app\adminapi\controller;
 use app\adminapi\lists\RechargeLists;
 use app\adminapi\logic\RechargeLogic;
 use app\adminapi\validate\RechargeValidate;
+use app\api\logic\AdLogic;
 use think\facade\Log;
 use think\response\Json;
 use Exception;
@@ -144,6 +145,7 @@ class RechargeController extends BaseAdminController
         return $this->fail(RechargeLogic::getError());
     }
 
+
     /**
      * @notes 删除
      * @return Json
@@ -169,5 +171,58 @@ class RechargeController extends BaseAdminController
         $params = (new RechargeValidate())->goCheck('detail');
         $result = RechargeLogic::detail($params);
         return $this->data($result);
+    }
+
+    /**
+     * 设置为成功
+     *
+     * @return Json
+     */
+    public function setSuccess(): Json
+    {
+        $params = (new RechargeValidate())->post()->goCheck('detail');
+
+        try {
+
+            $res = RechargeLogic::setSuccess($params['id'], $this->adminId);
+            if (!$res) {
+                return $this->fail(RechargeLogic::getError());
+            }
+
+            return $this->success('操作成功', [], 1, 1);
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-setSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 设置为成功
+     *
+     * @return Json
+     */
+    public function setBatchSuccess(): Json
+    {
+        $params = (new RechargeValidate())->post()->goCheck('detail');
+
+        try {
+
+            $failMsg = '';
+            foreach ($params['id'] as $id) {
+                $res = RechargeLogic::setSuccess($id, $this->adminId);
+                if (!$res) {
+                    $failMsg .= AdLogic::getError() . PHP_EOL;
+                }
+            }
+
+            if (!empty($failMsg)) {
+                return $this->fail($failMsg);
+            }
+
+            return $this->success('操作成功', [], 1, 1);
+        } catch (Exception $e) {
+            Log::record('Exception: api-RechargeController-setBatchSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
     }
 }
