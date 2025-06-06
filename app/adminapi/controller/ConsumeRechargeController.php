@@ -72,6 +72,9 @@ class ConsumeRechargeController extends BaseAdminController
             if ($info['status'] == 4) {
                 return $this->fail('设置失败，当前状态为已失败');
             }
+            if ($info['status'] == 5) {
+                return $this->fail('设置失败，当前状态为部分成功');
+            }
 
             $res = ConsumeRechargeLogic::setRecharging($info['id'], $this->adminId);
 
@@ -168,6 +171,9 @@ class ConsumeRechargeController extends BaseAdminController
             }
             if ($info['status'] == 4) {
                 return $this->fail('设置失败，当前状态为已失败');
+            }
+            if ($info['status'] == 5) {
+                return $this->fail('设置失败，当前状态为部分成功');
             }
 
             $ratioData = [
@@ -340,6 +346,99 @@ class ConsumeRechargeController extends BaseAdminController
     }
 
     /**
+     * 设置为部分成功
+     *
+     * @return Json
+     */
+    public function setPartSuccess(): Json
+    {
+        $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
+
+        try {
+            if (empty($params['value']) ){
+                return $this->fail('请正确输入金额');
+            }
+
+            $info = ConsumeRechargeLogic::infoHaveUser($params['id']);
+            if (empty($info) || empty($info['id'])) {
+                return $this->fail('不存在的数据，请刷新页面后再试');
+            }
+            if ($info['status'] == 3) {
+                return $this->success('设置成功', [], 1, 1);
+            }
+            if ($info['status'] == 4) {
+                return $this->fail('设置失败，当前状态为已失败');
+            }
+            if ($info['status'] == 5) {
+                return $this->fail('设置失败，当前状态为部分成功');
+            }
+            if (bccomp($params['value'], $info['recharge_price'], 2) >= 0) {
+                return $this->fail('设置失败，到账金额不能大于等于充值金额');
+            }
+
+            $ratioData = [
+                'first_ratio' => '',
+                'second_ratio' => '',
+                'three_ratio' => ''
+            ];
+
+            $confNames = [];
+            if ($info['type'] == 1) {
+                $confNames[] = 'phone_first_ratio';
+                $confNames[] = 'phone_second_ratio';
+                $confNames[] = 'phone_three_ratio';
+            } elseif ($info['type'] == 2) {
+                $confNames[] = 'electricity_first_ratio';
+                $confNames[] = 'electricity_second_ratio';
+                $confNames[] = 'electricity_three_ratio';
+            } elseif ($info['type'] == 3) {
+                $confNames[] = 'quickly_first_ratio';
+                $confNames[] = 'quickly_second_ratio';
+                $confNames[] = 'quickly_three_ratio';
+            } elseif ($info['type'] == 4) {
+                $confNames[] = 'card_first_ratio';
+                $confNames[] = 'card_second_ratio';
+                $confNames[] = 'card_three_ratio';
+            }
+
+            if (empty($confNames)) {
+                return $this->fail('类型异常');
+            }
+
+            $confData = ConfigService::getByNames('website', $confNames);
+            $confData = array_column($confData, 'value', 'name');
+            if ($info['type'] == 1) {
+                $ratioData['first_ratio'] = $confData['phone_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['phone_second_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['phone_three_ratio'] ?? '';
+            } elseif ($info['type'] == 2) {
+                $ratioData['first_ratio'] = $confData['electricity_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['electricity_second_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['electricity_three_ratio'] ?? '';
+            } elseif ($info['type'] == 3) {
+                $ratioData['first_ratio'] = $confData['quickly_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['quickly_first_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['quickly_three_ratio'] ?? '';
+            } elseif ($info['type'] == 4) {
+                $ratioData['first_ratio'] = $confData['card_first_ratio'] ?? '';
+                $ratioData['second_ratio'] = $confData['card_second_ratio'] ?? '';
+                $ratioData['three_ratio'] = $confData['card_three_ratio'] ?? '';
+            }
+
+            $res = ConsumeRechargeLogic::setPartSuccess($info, $ratioData, $this->adminId, $params['value']);
+            if (!$res) {
+                return $this->fail('设置失败');
+            }
+
+            return $this->success('设置成功', [], 1, 1);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-ConsumeRechargeController-setPartSuccess Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
      * 设置为失败
      *
      * @return Json
@@ -358,6 +457,9 @@ class ConsumeRechargeController extends BaseAdminController
             }
             if ($info['status'] == 3) {
                 return $this->fail('设置失败，当前状态为已成功');
+            }
+            if ($info['status'] == 5) {
+                return $this->fail('设置失败，当前状态为部分成功');
             }
 
             $res = ConsumeRechargeLogic::setFail($info['id'], $this->adminId);
@@ -442,7 +544,7 @@ class ConsumeRechargeController extends BaseAdminController
             }
 
             if ($info['type'] == 1 || $info['type'] == 3) {
-                $requestData = (new ConsumeRechargeService())->getPhoneBalance($info['phone']);
+                $requestData = (new ConsumeRechargeService())->getPhoneBalance($info['account']);
                 if (empty($requestData)) {
                     return $this->fail('暂不支持的手机号充值');
                 }

@@ -348,23 +348,8 @@ class AdController extends BaseApiController
         $params = (new AdValidate())->post()->goCheck('id');
 
         try {
-            $info = AdLogic::info($params['id']);
-            if (empty($info['id'])) {
-                return $this->fail('广告不存在');
-            }
-            if ($info['user_id'] != $this->userId) {
-                return $this->fail('获取数据异常');
-            }
 
-            $userInfo = UserLogic::info($info['user_id']);
-            if (empty($userInfo['id'])) {
-                return $this->fail('用户不存在');
-            }
-            if (bccomp($userInfo['freeze_money'], $info['left_num'], 3) < 0) {
-                return $this->fail('返还的冻结金额不足');
-            }
-
-            $res = AdLogic::deleteData($info);
+            $res = AdLogic::deleteData($params['id'], $this->userId);
             if (!$res) {
                 return $this->fail(AdLogic::getError());
             }
@@ -464,7 +449,7 @@ class AdController extends BaseApiController
             return $this->success('', $newData);
 
         } catch (Exception $e) {
-            Log::record('Exception: api-AdController-adOrderList Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-AdController-completeData Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -691,16 +676,7 @@ class AdController extends BaseApiController
 
         try {
 
-            // 广告订单详情
-            $info = AdOrderLogic::info($params['id']);
-            if (empty($info['id'])) {
-                return $this->fail('广告不存在');
-            }
-            if ($info['user_id'] != $this->userId) {
-                return $this->fail('获取数据异常');
-            }
-
-            $res = AdOrderLogic::paySuccessOrder($info);
+            $res = AdOrderLogic::paySuccessOrder($params['id'], $this->userId);
             if (!$res) {
                 return $this->fail(AdLogic::getError());
             }
@@ -708,7 +684,7 @@ class AdController extends BaseApiController
             return $this->success();
 
         } catch (Exception $e) {
-            Log::record('Exception: api-AdController-cancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-AdController-payOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -746,7 +722,7 @@ class AdController extends BaseApiController
             return $this->success();
 
         } catch (Exception $e) {
-            Log::record('Exception: api-AdController-cancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-AdController-appealOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -772,7 +748,7 @@ class AdController extends BaseApiController
             return $this->success();
 
         } catch (Exception $e) {
-            Log::record('Exception: api-AdController-cancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            Log::record('Exception: api-AdController-completeOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
@@ -799,6 +775,67 @@ class AdController extends BaseApiController
 
         } catch (Exception $e) {
             Log::record('Exception: api-AdController-cancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 卖方取消订单
+     *
+     * @return Json
+     */
+    public function sellerCancelOrder(): Json
+    {
+        $params = (new AdValidate())->get()->goCheck('id', [
+            'user_id' => $this->userId
+        ]);
+
+        try {
+
+            $res = AdOrderLogic::cancelOrder($params['id'], $this->userId, true);
+            if (!$res) {
+                return $this->fail(AdLogic::getError());
+            }
+
+            return $this->success();
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdController-sellerCancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
+     * 到时取消订单
+     *
+     * @return Json
+     */
+    public function timeCancelOrder(): Json
+    {
+        $params = (new AdValidate())->get()->goCheck('id', [
+            'user_id' => $this->userId
+        ]);
+
+        try {
+
+            $info = AdOrderLogic::info($params['id']);
+            if (empty($info['id'])) {
+                return $this->fail('广告不存在');
+            }
+            if ($info['user_id'] != $this->userId && $info['to_user_id'] != $this->userId) {
+                return $this->fail('获取数据异常');
+            }
+            if ($info['status'] == 4) {
+                return $this->fail('当前订单已完成');
+            }
+            if ($info['status'] == 5) {
+                return $this->success();
+            }
+
+            return $this->fail('正在自动取消订单，请稍后查看订单列表');
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-AdController-timeCancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }

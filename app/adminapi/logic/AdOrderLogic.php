@@ -151,7 +151,46 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 增加用户余额
+            // 扣除卖方冻结余额
+            $res = User::where('id', $adOrderInfo['to_user_id'])
+                ->dec('freeze_money', $adOrderInfo['num'])
+                ->update([
+                    'update_time' => time()
+                ]);
+
+            if (!$res) {
+                self::setError('扣除卖方冻结资产失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 获取卖方冻结余额
+            $userInfo = User::where('id', $adOrderInfo['to_user_id'])->find();
+            if ($userInfo['freeze_money'] < 0) {
+                self::setError('卖方账户冻结资产不足');
+                Db::rollback();
+                return false;
+            }
+
+            // 卖方流水
+            $billData = [
+                'user_id' => $adOrderInfo['to_user_id'],
+                'type' => 13,
+                'desc' => $userInfo['sn'] . ' 购买Y币扣除',
+                'change_type' => 2,
+                'change_money' => $adOrderInfo['num'],
+                'changed_money' => $userInfo['freeze_money'],
+                'source_sn' => $adOrderInfo['order_no']
+            ];
+
+            $res = UserMoneyLog::create($billData);
+            if (empty($res['id'])) {
+                self::setError('记录卖方流水失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 增加买方余额
             $res = User::where('id', $adOrderInfo['user_id'])
                 ->inc('user_money', $adOrderInfo['num'])
                 ->update([
@@ -164,10 +203,10 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 获取用户余额
+            // 获取买方余额
             $userInfo = User::where('id', $adOrderInfo['user_id'])->find();
 
-            // 流水
+            // 买方流水
             $billData = [
                 'user_id' => $adOrderInfo['user_id'],
                 'type' => 13,
@@ -185,7 +224,7 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 消息通知
+            // 买方消息通知
             $orderNoSub = substr($adOrderInfo['order_no'], -4);
             $noticeData = [
                 'user_id' => $adOrderInfo['user_id'],
@@ -206,7 +245,7 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 消息通知
+            // 卖方消息通知
             $orderNoSub = substr($adOrderInfo['order_no'], -4);
             $noticeData = [
                 'user_id' => $adOrderInfo['to_user_id'],
@@ -227,6 +266,7 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
+            // 订单状态更改
             $completeTime = time();
             $params = [
                 'status' => 4,
@@ -293,40 +333,6 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 返还用户余额
-            $res = User::where('id', $adOrderInfo['user_id'])
-                ->inc('freeze_money', $adOrderInfo['num'])
-                ->update([
-                    'update_time' => time()
-                ]);
-
-            if (!$res) {
-                self::setError('订单：' . $adOrderInfo['order_no'] . ' 设置失败，返还用户冻结资产失败');
-                Db::rollback();
-                return false;
-            }
-
-            // 获取用户余额
-            $userInfo = User::where('id', $adOrderInfo['user_id'])->find();
-
-            // 流水
-            $billData = [
-                'user_id' => $adOrderInfo['user_id'],
-                'type' => 13,
-                'desc' => '取消购买广告返还冻结资产',
-                'change_type' => 1,
-                'change_money' => $adOrderInfo['num'],
-                'changed_money' => $userInfo['freeze_money'],
-                'source_sn' => $userInfo['order_no']
-            ];
-
-            $res = UserMoneyLog::create($billData);
-            if (empty($res['id'])) {
-                self::setError('订单：' . $adOrderInfo['order_no'] . ' 设置失败，记录流水失败');
-                Db::rollback();
-                return false;
-            }
-
             // 返还广告剩余额
             $res = UserAd::where('id', $adOrderInfo['ad_id'])
                 ->inc('left_num', $adOrderInfo['num'])
@@ -345,7 +351,7 @@ class AdOrderLogic extends BaseLogic
             $noticeData = [
                 'user_id' => $adOrderInfo['to_user_id'],
                 'title' => '订单 ' . $orderNoSub . ' 已取消',
-                'content' => '您的订单已被取消，订单尾号 ' . $orderNoSub,
+                'content' => '广告订单已取消，订单尾号 ' . $orderNoSub,
                 'scene_id' => 0,
                 'read' => 0,
                 'recipient' => 1,
@@ -363,8 +369,7 @@ class AdOrderLogic extends BaseLogic
 
             $params = [
                 'status' => 5,
-                'is_admin_cancel' => 1,
-                'cancel_type' => 3,
+                'cancel_type' => 4,
                 'cancel_time' => time(),
                 'admin_id' => $adminId,
                 'update_time' => time()
@@ -387,5 +392,4 @@ class AdOrderLogic extends BaseLogic
             return false;
         }
     }
-
 }

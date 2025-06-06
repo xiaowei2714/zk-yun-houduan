@@ -107,6 +107,35 @@ class ConsumeRechargeLogic extends BaseLogic
     /**
      * 数量
      *
+     * @param $type
+     * @param array $statusArr
+     * @param null $startTime
+     * @return false|int
+     */
+    public static function getCountByType($type, $statusArr = [], $startTime = null)
+    {
+        try {
+            $obj = ConsumeRecharge::where('type', '=', $type);
+
+            if (!empty($statusArr)) {
+                $obj = $obj->whereIn('status', $statusArr);
+            }
+
+            if (!empty($startTime)) {
+                $obj = $obj->where('create_time', '>=', $startTime);
+            }
+
+            return $obj->count();
+
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-groupCount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
+     * 数量
+     *
      * @param $userId
      * @return array|false
      */
@@ -215,7 +244,7 @@ class ConsumeRechargeLogic extends BaseLogic
             $billDesc = '';
 
             $rechargePriceStr = (string)$params['recharge_price']; // 转换为字符串
-            $rechargePriceStr = preg_replace('/\.?0*$/', '$1', $rechargePriceStr); // 使用正则表达式移除尾部的0和.
+            $rechargePriceStr = sprintf('%g', $rechargePriceStr);
 
             switch ($params['type']) {
                 case 1:
@@ -444,7 +473,7 @@ class ConsumeRechargeLogic extends BaseLogic
             $billDesc = '';
 
             $rechargePriceStr = (string)$info['recharge_price']; // 转换为字符串
-            $rechargePriceStr = preg_replace('/\.?0*$/', '$1', $rechargePriceStr); // 使用正则表达式移除尾部的0和.
+            $rechargePriceStr = sprintf('%g', $rechargePriceStr);
 
             switch ($info['type']) {
                 case 1:

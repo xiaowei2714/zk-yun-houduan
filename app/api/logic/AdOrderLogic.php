@@ -211,8 +211,7 @@ class AdOrderLogic extends BaseLogic
                 $aliasD . 'price',
                 $aliasD . 'dan_price',
                 $aliasD . 'pay_type',
-                $aliasD . 'num',
-                $aliasD . 'expire_time',
+                 $aliasD . 'expire_time',
                 $aliasD . 'cancel_type',
                 $aliasD . 'create_time',
                 'u.nickname as sell_nickname',
@@ -262,47 +261,6 @@ class AdOrderLogic extends BaseLogic
         try {
             Db::startTrans();
 
-            // 扣除用户余额
-            $res = User::where('id', $adInfo['user_id'])
-                ->dec('freeze_money', $params['buy_num'])
-                ->update([
-                    'update_time' => time()
-                ]);
-
-            if (!$res) {
-                self::setError('扣除用户冻结资产失败');
-                Db::rollback();
-                return false;
-            }
-
-            // 获取用户余额
-            $userInfo = User::where('id', $adInfo['user_id'])->find();
-            if ($userInfo['freeze_money'] < 0) {
-                self::setError('账户冻结资产不足');
-                Db::rollback();
-                return false;
-            }
-
-            $orderNo = self::generateOrderNo($params['user_id']);
-
-            // 流水
-            $billData = [
-                'user_id' => $adInfo['user_id'],
-                'type' => 13,
-                'desc' => '购买广告扣除冻结资产',
-                'change_type' => 2,
-                'change_money' => $params['buy_num'],
-                'changed_money' => $userInfo['freeze_money'],
-                'source_sn' => $orderNo
-            ];
-
-            $res = UserMoneyLog::create($billData);
-            if (empty($res['id'])) {
-                self::setError('记录流水失败');
-                Db::rollback();
-                return false;
-            }
-
             // 扣除广告剩余额
             $res = UserAd::where('id', $adInfo['id'])
                 ->dec('left_num', $params['buy_num'])
@@ -316,13 +274,15 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 获取用户余额
+            // 获取广告余额
             $adInfo = UserAd::where('id', $adInfo['id'])->find();
             if ($adInfo['left_num'] < 0) {
                 self::setError('广告剩余额度不足');
                 Db::rollback();
                 return false;
             }
+
+            $orderNo = self::generateOrderNo($params['user_id']);
 
             // 消息通知
             $orderNoSub = substr($orderNo, -4);
@@ -340,7 +300,7 @@ class AdOrderLogic extends BaseLogic
 
             $res = NoticeRecord::create($noticeData);
             if (empty($res)) {
-                self::setError('设置失败，新增通知失败');
+                self::setError('购买失败，新增通知失败');
                 Db::rollback();
                 return false;
             }
@@ -381,13 +341,47 @@ class AdOrderLogic extends BaseLogic
     /**
      * 设置订单成功
      *
-     * @param $adInfo
+     * @param $id
+     * @param $operUserId
      * @return bool
      */
-    public static function paySuccessOrder($adOrderInfo)
+    public static function paySuccessOrder($id, $operUserId)
     {
         try {
             Db::startTrans();
+
+            // 广告订单详情
+            $adOrderInfo = self::info($id);
+            if (empty($adOrderInfo['id'])) {
+                self::setError('设置失败，订单不存在');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['user_id'] != $operUserId) {
+                self::setError('设置失败，订单不存在');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] < 0 || $adOrderInfo['status'] > 5) {
+                self::setError('设置失败，订单状态异常');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 2) {
+                self::setError('设置失败，当前订单已支付成功');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 4) {
+                self::setError('设置失败，当前订单已完成');
+                Db::rollback();
+                return false;
+            }
+            if ($adOrderInfo['status'] == 5) {
+                self::setError('设置失败，当前订单已取消');
+                Db::rollback();
+                return false;
+            }
 
             $orderNoSub = substr($adOrderInfo['order_no'], -4);
 
@@ -468,7 +462,8 @@ class AdOrderLogic extends BaseLogic
     /**
      * 完成订单
      *
-     * @param $adOrderInfo
+     * @param $id
+     * @param $operUserId
      * @return bool
      */
     public static function completeOrder($id, $operUserId)
@@ -488,7 +483,7 @@ class AdOrderLogic extends BaseLogic
                 Db::rollback();
                 return false;
             }
-            if ((int)$adOrderInfo['status'] < 0 || (int)$adOrderInfo['status'] > 5) {
+            if ($adOrderInfo['status'] < 0 || $adOrderInfo['status'] > 5) {
                 self::setError('确认收款失败，订单状态异常');
                 Db::rollback();
                 return false;
@@ -504,7 +499,46 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 增加用户余额
+            // 扣除卖方冻结余额
+            $res = User::where('id', $adOrderInfo['to_user_id'])
+                ->dec('freeze_money', $adOrderInfo['num'])
+                ->update([
+                    'update_time' => time()
+                ]);
+
+            if (!$res) {
+                self::setError('扣除卖方冻结资产失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 获取卖方冻结余额
+            $userInfo = User::where('id', $adOrderInfo['to_user_id'])->find();
+            if ($userInfo['freeze_money'] < 0) {
+                self::setError('卖方账户冻结资产不足');
+                Db::rollback();
+                return false;
+            }
+
+            // 卖方流水
+            $billData = [
+                'user_id' => $adOrderInfo['to_user_id'],
+                'type' => 13,
+                'desc' => $userInfo['sn'] . ' 购买Y币扣除',
+                'change_type' => 2,
+                'change_money' => $adOrderInfo['num'],
+                'changed_money' => $userInfo['freeze_money'],
+                'source_sn' => $adOrderInfo['order_no']
+            ];
+
+            $res = UserMoneyLog::create($billData);
+            if (empty($res['id'])) {
+                self::setError('记录卖方流水失败');
+                Db::rollback();
+                return false;
+            }
+
+            // 增加买方余额
             $res = User::where('id', $adOrderInfo['user_id'])
                 ->inc('user_money', $adOrderInfo['num'])
                 ->update([
@@ -517,10 +551,10 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 获取用户余额
+            // 获取买方余额
             $userInfo = User::where('id', $adOrderInfo['user_id'])->find();
 
-            // 流水
+            // 买方流水
             $billData = [
                 'user_id' => $adOrderInfo['user_id'],
                 'type' => 13,
@@ -538,12 +572,12 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 消息通知
+            // 买方消息通知
             $orderNoSub = substr($adOrderInfo['order_no'], -4);
             $noticeData = [
                 'user_id' => $adOrderInfo['user_id'],
                 'title' => '订单 ' . $orderNoSub . ' 已确认收款',
-                'content' => '您的订单已被卖家确认收款，订单尾号 ' . $orderNoSub,
+                'content' => '您的订单已由卖家确认收款，订单尾号 ' . $orderNoSub,
                 'scene_id' => 0,
                 'read' => 0,
                 'recipient' => 1,
@@ -559,12 +593,12 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
-            // 消息通知
+            // 卖方消息通知
             $orderNoSub = substr($adOrderInfo['order_no'], -4);
             $noticeData = [
                 'user_id' => $adOrderInfo['to_user_id'],
                 'title' => '订单 ' . $orderNoSub . ' 已确认收款',
-                'content' => '购买订单您已主动确认收款，订单尾号 ' . $orderNoSub,
+                'content' => '购买订单您已确认收款，订单尾号 ' . $orderNoSub,
                 'scene_id' => 0,
                 'read' => 0,
                 'recipient' => 1,
@@ -580,6 +614,7 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
+            // 订单状态更改
             $completeTime = time();
             $params = [
                 'status' => 4,
@@ -612,11 +647,12 @@ class AdOrderLogic extends BaseLogic
     /**
      * 取消订单
      *
-     * @param $adOrderInfo
-     * @param $isUserOper
+     * @param $id
+     * @param null $operUserId
+     * @param bool $isSeller
      * @return bool
      */
-    public static function cancelOrder($id, $operUserId = null)
+    public static function cancelOrder($id, $operUserId = null, $isSeller = false)
     {
         try {
             Db::startTrans();
@@ -628,57 +664,31 @@ class AdOrderLogic extends BaseLogic
                 Db::rollback();
                 return false;
             }
-            if ($operUserId != null && $adOrderInfo['user_id'] != $operUserId) {
-                self::setError('取消失败，订单不存在');
-                Db::rollback();
-                return false;
+            if ($operUserId != null) {
+                if (!$isSeller && $adOrderInfo['user_id'] != $operUserId) {
+                    self::setError('取消失败，订单不存在');
+                    Db::rollback();
+                    return false;
+                }
+
+                if ($isSeller && $adOrderInfo['to_user_id'] != $operUserId) {
+                    self::setError('取消失败，订单不存在');
+                    Db::rollback();
+                    return false;
+                }
             }
-            if ((int)$adOrderInfo['status'] < 0 || (int)$adOrderInfo['status'] > 5) {
+            if ($adOrderInfo['status'] < 0 || $adOrderInfo['status'] > 5) {
                 self::setError('取消失败，订单状态异常');
                 Db::rollback();
                 return false;
             }
             if ($adOrderInfo['status'] == 4) {
-                self::setError('取消失败，当前订单已完成');
+                self::setError('取消失败，当前订单状态为已完成');
                 Db::rollback();
                 return false;
             }
             if ($adOrderInfo['status'] == 5) {
-                self::setError('取消失败，当前订单已取消');
-                Db::rollback();
-                return false;
-            }
-
-            // 返还用户余额
-            $res = User::where('id', $adOrderInfo['user_id'])
-                ->inc('freeze_money', $adOrderInfo['num'])
-                ->update([
-                    'update_time' => time()
-                ]);
-
-            if (!$res) {
-                self::setError('取消失败，返还用户冻结资产失败');
-                Db::rollback();
-                return false;
-            }
-
-            // 获取用户余额
-            $userInfo = User::where('id', $adOrderInfo['user_id'])->find();
-
-            // 流水
-            $billData = [
-                'user_id' => $adOrderInfo['user_id'],
-                'type' => 13,
-                'desc' => '取消购买广告返还冻结资产',
-                'change_type' => 1,
-                'change_money' => $adOrderInfo['num'],
-                'changed_money' => $userInfo['freeze_money'],
-                'source_sn' => $userInfo['order_no']
-            ];
-
-            $res = UserMoneyLog::create($billData);
-            if (empty($res['id'])) {
-                self::setError('取消失败，记录流水失败');
+                self::setError('取消失败，当前订单状态为已取消');
                 Db::rollback();
                 return false;
             }
@@ -691,17 +701,28 @@ class AdOrderLogic extends BaseLogic
                 ]);
 
             if (!$res) {
-                self::setError('取消失败，返还广告剩余额度失败');
+                self::setError('取消失败，返还广告额度失败');
                 Db::rollback();
                 return false;
             }
 
             // 消息通知
             $orderNoSub = substr($adOrderInfo['order_no'], -4);
+            $noticeContent = '';
+            if (empty($operUserId)) {
+                $noticeContent = '广告订单已到时自动取消，订单尾号 ' . $orderNoSub;
+            } else {
+                if ($isSeller) {
+                    $noticeContent = '广告订单已由卖方取消，订单尾号 ' . $orderNoSub;
+                } else {
+                    $noticeContent = '广告订单已由买方取消，订单尾号 ' . $orderNoSub;
+                }
+            }
+
             $noticeData = [
                 'user_id' => $adOrderInfo['to_user_id'],
                 'title' => '订单 ' . $orderNoSub . ' 已取消',
-                'content' => '您的订单已被买家取消，订单尾号 ' . $orderNoSub,
+                'content' => $noticeContent,
                 'scene_id' => 0,
                 'read' => 0,
                 'recipient' => 1,
@@ -712,14 +733,43 @@ class AdOrderLogic extends BaseLogic
 
             $res = NoticeRecord::create($noticeData);
             if (empty($res)) {
-                self::setError('设置失败，新增通知失败');
+                self::setError('取消失败，发放通知失败');
                 Db::rollback();
                 return false;
             }
 
+            if ($isSeller) {
+                $noticeData = [
+                    'user_id' => $adOrderInfo['user_id'],
+                    'title' => '订单 ' . $orderNoSub . ' 已取消',
+                    'content' => '广告订单已由卖方取消，订单尾号 ' . $orderNoSub,
+                    'scene_id' => 0,
+                    'read' => 0,
+                    'recipient' => 1,
+                    'send_type' => 1,
+                    'notice_type' => 1,
+                    'type' => 2
+                ];
+
+                $res = NoticeRecord::create($noticeData);
+                if (empty($res)) {
+                    self::setError('取消失败，发放通知失败');
+                    Db::rollback();
+                    return false;
+                }
+            }
+
+            $cancelType = 1;
+            if (!empty($operUserId)) {
+                $cancelType = 2;
+            }
+            if ($isSeller) {
+                $cancelType = 3;
+            }
+
             $params = [
                 'status' => 5,
-                'cancel_type' => !empty($operUserId) ? 2 : 1,
+                'cancel_type' => $cancelType,
                 'cancel_time' => time(),
                 'update_time' => time()
             ];

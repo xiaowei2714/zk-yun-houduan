@@ -89,7 +89,7 @@ class UserLists extends BaseAdminDataLists implements ListsExcelInterface
             'user_id',
             'sum(`pay_price`) as pay_price'
         ])->whereIn('user_id', $userIds)
-            ->where('status', 3)
+            ->whereIn('status', [1, 2, 3])
             ->where('create_time', '>=', strtotime(date('Y-m-d 00:00:00')))
             ->group('user_id')
             ->select()
@@ -102,7 +102,7 @@ class UserLists extends BaseAdminDataLists implements ListsExcelInterface
             'user_id',
             'sum(`pay_price`) as pay_price'
         ])->whereIn('user_id', $userIds)
-            ->where('status', 3)
+            ->whereIn('status', [1, 2, 3])
             ->group('user_id')
             ->select()
             ->toArray();

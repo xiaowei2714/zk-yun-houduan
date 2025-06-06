@@ -10,11 +10,29 @@ use app\api\logic\AdOrderLogic;
 use app\common\model\AdOrder;
 use think\queue\Job;
 use think\facade\Log;
+use Exception;
 
 class CancelOrder
 {
     public function fire(Job $job, $data)
     {
+        try {
+            Log::record('info: job-CancelOrder Start');
+
+            $this->handleData($job, $data);
+
+            Log::record('info: job-CancelOrder End');
+
+        } catch (Exception $e) {
+            Log::record('Exception: job-CancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    protected function handleData(Job $job, $data)
+    {
+        Log::record('info: job-CancelOrder params: ' . json_encode($data));
+
         $orderId = $data['order_id'] ?? 0;
 
         if (!$orderId) {
@@ -26,7 +44,7 @@ class CancelOrder
         $result = $this->handleCancel($orderId);
 
         if ($result) {
-            Log::info("订单自动取消成功order_id".$orderId, ['order_id' => $orderId]);
+            Log::info("订单自动取消成功order_id" . $orderId, ['order_id' => $orderId]);
             $job->delete();
         } else {
             // 失败重试（最多3次）
@@ -45,7 +63,7 @@ class CancelOrder
             $order = AdOrder::find($orderId);
 
             if (!$order) {
-                Log::warning("订单不存在order_id".$orderId, ['order_id' => $orderId]);
+                Log::warning("订单不存在order_id" . $orderId, ['order_id' => $orderId]);
                 return true;
             }
 

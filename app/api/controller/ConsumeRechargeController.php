@@ -82,6 +82,10 @@ class ConsumeRechargeController extends BaseApiController
                     break;
 
                 case 3:
+                    $newParams['status'] = 5;
+                    break;
+
+                case 4:
                     $newParams['status'] = 4;
                     break;
 
@@ -201,7 +205,7 @@ class ConsumeRechargeController extends BaseApiController
             $rate = WebSettingLogic::getReferenceRate();
 
             $areaData = Config::get('project.area');
-            $operatorConf = Config::get('project.area');
+            $operatorConf = Config::get('project.operator');
 
             return $this->data([
                 'id' => $info['id'],
@@ -214,7 +218,7 @@ class ConsumeRechargeController extends BaseApiController
                 'up_price' => $info['recharge_up_price'],
                 'down_price' => $info['recharge_down_price'] ?: $info['recharge_up_price'],
                 'balances_price' => $info['balances_price'] ?: 0,
-                'meal_discount' => preg_replace('/\.?0*$/', '', $info['meal_discount']),
+                'meal_discount' => sprintf('%g', $info['meal_discount']),
                 'pay_price' => $info['pay_price'],
                 'distance_price' => bcsub($info['pay_price'], bcmul($info['pay_price'], bcdiv($info['meal_discount'], 10, 4), 4), 3),
                 'hl' => $rate,
@@ -489,8 +493,7 @@ class ConsumeRechargeController extends BaseApiController
         }
 
         $statusArr = [1, 2];
-        $today = strtotime(date('Y-m-d 00:00:00'));
-        $num = ConsumeRechargeLogic::getCountByMealId($newParams['meal_id'], $statusArr, $today);
+        $num = ConsumeRechargeLogic::getCountByType($newParams['type'], $statusArr);
         $num += 1;
         if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
             return $this->fail('暂时达到每日同时存在订单上限，请稍后再试');
@@ -805,8 +808,7 @@ class ConsumeRechargeController extends BaseApiController
         }
 
         $statusArr = [1, 2];
-        $today = strtotime(date('Y-m-d 00:00:00'));
-        $num = ConsumeRechargeLogic::getCountByMealId($params['meal_id'], $statusArr, $today);
+        $num = ConsumeRechargeLogic::getCountByType($params['type'], $statusArr);
         $num += $dataNum;
         if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
             return $this->fail('暂时达到每日同时存在订单上限，请稍后再试');
@@ -968,7 +970,7 @@ class ConsumeRechargeController extends BaseApiController
                     return $this->fail('余额不足，请前往充值页面进行充值');
                 }
 
-                $requestData = (new ConsumeRechargeService())->getPhoneBalance($info['phone']);
+                $requestData = (new ConsumeRechargeService())->getPhoneBalance($info['account']);
                 if (empty($requestData)) {
                     return $this->fail('暂不支持的手机号充值');
                 }

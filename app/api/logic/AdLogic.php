@@ -306,13 +306,38 @@ EOT;
     /**
      * 删除数据
      *
-     * @param $info
+     * @param $id
+     * @param $operUserId
      * @return bool
      */
-    public static function deleteData($info): bool
+    public static function deleteData($id, $operUserId): bool
     {
         try {
             Db::startTrans();
+
+            $info = AdLogic::info($id);
+            if (empty($info['id'])) {
+                self::setError('广告不存在');
+                Db::rollback();
+                return false;
+            }
+            if ($info['user_id'] != $operUserId) {
+                self::setError('广告不存在');
+                Db::rollback();
+                return false;
+            }
+
+            $userInfo = UserLogic::info($info['user_id']);
+            if (empty($userInfo['id'])) {
+                self::setError('用户不存在');
+                Db::rollback();
+                return false;
+            }
+            if (bccomp($userInfo['freeze_money'], $info['left_num'], 3) < 0) {
+                self::setError('返还的冻结金额不足');
+                Db::rollback();
+                return false;
+            }
 
             // 返回冻结金额
             $res = User::where('id', $info['user_id'])

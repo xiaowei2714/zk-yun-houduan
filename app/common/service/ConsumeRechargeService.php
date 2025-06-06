@@ -35,7 +35,7 @@ class ConsumeRechargeService
         }
 
         $configKey = Config::get('project.recharge_key');
-        $operatorConf = Config::get('project.operator');
+        $operatorConf = array_flip(Config::get('project.operator'));
 
         $url = 'https://ap.xiaoyun.top/api/xy/cx';
 

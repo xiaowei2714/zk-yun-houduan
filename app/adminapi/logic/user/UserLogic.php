@@ -12,6 +12,7 @@ use app\common\model\UserMoneyLog;
 use think\facade\Db;
 use think\facade\Log;
 use think\Model;
+use think\facade\Config;
 use Exception;
 
 /**
@@ -261,4 +262,36 @@ class UserLogic extends BaseLogic
         }
     }
 
+    /**
+     * @notes 重置登录密码
+     * @param $id
+     * @param $password
+     * @return bool
+     * @author 段誉
+     * @date 2022/9/16 18:06
+     */
+    public static function resetPassword($id, $password)
+    {
+        try {
+            // 重置密码
+            $passwordSalt = Config::get('project.unique_identification');
+            $password = create_password($password, $passwordSalt);
+
+            // 更新
+            $res = User::where('id', $id)
+                ->update([
+                    'password' => $password
+                ]);
+
+            if (empty($res)) {
+                self::setError('修改失败，不能与原密码一样');
+                return false;
+            }
+
+            return true;
+        } catch (Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
 }

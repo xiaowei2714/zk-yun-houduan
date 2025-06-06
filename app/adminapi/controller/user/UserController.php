@@ -15,6 +15,7 @@ namespace app\adminapi\controller\user;
 
 use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\user\UserLists;
+use app\adminapi\lists\user\UserMoneyLists;
 use app\adminapi\logic\user\UserLogic;
 use app\adminapi\validate\user\AdjustUserMoney;
 use app\adminapi\validate\user\UserValidate;
@@ -173,4 +174,26 @@ class UserController extends BaseAdminController
         return $this->fail($res);
     }
 
+    /**
+     * 修改密码
+     *
+     * @return Json
+     */
+    public function resetPassword()
+    {
+        $params = (new UserValidate())->post()->goCheck('password');
+        $res = UserLogic::resetPassword($params['id'], $params['password']);
+        if ($res === true) {
+            return $this->success('操作成功', [], 1, 1);
+        }
+
+        return $this->fail(UserLogic::getError());
+    }
+
+    public function userMoneyLog()
+    {
+        (new UserValidate())->get()->goCheck('userId');
+
+        return $this->dataLists(new UserMoneyLists());
+    }
 }

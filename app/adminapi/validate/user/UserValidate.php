@@ -27,14 +27,20 @@ class UserValidate extends BaseValidate
 
     protected $rule = [
         'id' => 'require|checkUser',
+        'user_id' => 'require|checkUser',
         'field' => 'require|checkField',
         'value' => 'require',
+        'password' => 'require|length:6,20|alphaNum',
     ];
 
     protected $message = [
         'id.require' => '请选择用户',
+        'user_id.require' => '请选择用户',
         'field.require' => '请选择操作',
         'value.require' => '请输入内容',
+        'password.require' => '请输入密码',
+        'password.length' => '密码须在6-25位之间',
+        'password.alphaNum' => '密码须为字母数字组合',
     ];
 
 
@@ -49,6 +55,23 @@ class UserValidate extends BaseValidate
         return $this->only(['id']);
     }
 
+    /**
+     * @return UserValidate
+     */
+    public function sceneUserId()
+    {
+        return $this->only(['user_id']);
+    }
+
+    /**
+     * 密码
+     *
+     * @return UserValidate
+     */
+    public function scenePassword(): UserValidate
+    {
+        return $this->only(['id', 'password']);
+    }
 
     /**
      * @notes 用户信息校验

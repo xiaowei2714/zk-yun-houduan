@@ -350,7 +350,7 @@ class UserController extends BaseApiController
                     'id' => $value['id'],
                     'name' => $value['name'],
                     'type' => $typeShow,
-                    'discount' => preg_replace('/\.?0*$/', '$1', $discount) // 使用正则表达式移除尾部的0和.
+                    'discount' => sprintf('%g', $discount)
                 ];
             }
 
@@ -441,7 +441,7 @@ class UserController extends BaseApiController
 
                 $tmpCurUserMeal = $curUserMealList[$value['id']] ?? 10;
                 if (bccomp($tmpCurUserMeal,  $paramsList[$value['id']], 3) > 0) {
-                    $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：最低折扣不能超过' . preg_replace('/\.?0*$/', '$1', $tmpCurUserMeal) . '折'. PHP_EOL;
+                    $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：最低折扣不能超过' . sprintf('%g', $tmpCurUserMeal) . '折'. PHP_EOL;
                     continue;
                 }
 

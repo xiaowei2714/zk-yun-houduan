@@ -8,8 +8,6 @@ use think\facade\Config;
 
 /**
  * 话费、电费充值列表
- * Class UserLists
- * @package app\adminapi\lists\user
  */
 class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInterface
 {
@@ -51,6 +49,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
             $aliasD . 'pay_time',
             $aliasD . 'create_time',
             'a.name as admin_name',
+            'u.sn as user_sn',
             'u.nickname'
         ])->alias($alias)
             ->leftJoin('user u', $aliasD . 'user_id = u.id')
@@ -106,7 +105,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
                 $nameArea = $areaData[$item['name_area']] ?? '';
             }
 
-            $newData[] = [
+            $tmpData = [
                 'id' => $item['id'],
                 'sn' => $item['sn'],
                 'admin_name' => $item['admin_name'],
@@ -125,6 +124,55 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
                 'ctime' => $cTime,
                 'sa' => false
             ];
+
+            if (isset($this->params['export']) && $this->params['export'] == 2) {
+                $tmpData['user_sn'] = $item['user_sn'];
+                $tmpData['nickname'] = $item['nickname'];
+                $tmpData['type_show'] = '';
+                $tmpData['status_show'] = '';
+
+                switch ($item['type']) {
+                    case 1:
+                        $tmpData['type_show'] = '话费';
+                        break;
+
+                    case 2:
+                        $tmpData['type_show'] = '电费';
+                        break;
+
+                    case 3:
+                        $tmpData['type_show'] = '话费快充';
+                        break;
+
+                    case 4:
+                        $tmpData['type_show'] = '礼品卡';
+                        break;
+                }
+
+                switch ($item['status']) {
+                    case 1:
+                        $tmpData['status_show'] = '待充值';
+                        break;
+
+                    case 2:
+                        $tmpData['status_show'] = '充值中';
+                        break;
+
+                    case 3:
+                        $tmpData['status_show'] = '充值成功';
+                        break;
+
+                    case 4:
+                        $tmpData['status_show'] = '充值失败';
+                        break;
+
+                    case 5:
+                        $tmpData['status_show'] = '部分成功';
+                        break;
+                }
+            }
+
+            $newData[] = $tmpData;
         }
 
         return $newData;
@@ -216,65 +264,9 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
     }
 
     /**
-     * @param $params
-     * @param $pre
-     * @return array
-     */
-    private function handleWhereData1($params, $pre = '')
-    {
-        $newData = [];
-        if (isset($params['sn']) && $params['sn'] !== '' && $params['sn'] !== null) {
-            $newData[] = [
-                $pre . 'sn', 'like', '%' . $params['sn'] . '%'
-            ];
-        }
-
-        if (!empty($params['account'])) {
-            $tmpAccount = '';
-            if (is_string($params['account'])) {
-                $newData[] = [
-                    $pre . 'account|name_area', 'like', '%' . $params['account'] . '%'
-                ];
-            }
-
-            if (is_array($params['account'])) {
-
-            }
-        }
-
-        if (!empty($params['status'])) {
-            $newData[] = [
-                $pre . 'status', '=', $params['status']
-            ];
-        }
-
-        if (!empty($params['type'])) {
-            $newData[] = [
-                $pre . 'type', '=', $params['type']
-            ];
-        }
-
-        if (!empty($params['start_time']) && !empty($params['end_time'])) {
-            $newData[] = [
-                $pre . 'create_time', 'BETWEEN', [strtotime($params['start_time']), strtotime($params['end_time'])]
-            ];
-        }
-
-        if (!empty($params['account_type'])) {
-            $newData[] = [
-                $pre . 'account_type', '=', $params['account_type']
-            ];
-        }
-
-        return $newData;
-    }
-
-
-    /**
-     * @notes 导出文件名
+     * 导出文件名
+     *
      * @return string
-     * @author 段誉
-     * @date 2022/11/24 16:17
      */
     public function setFileName(): string
     {
@@ -282,20 +274,26 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
     }
 
     /**
-     * @notes 导出字段
+     * 导出字段
+     *
      * @return string[]
-     * @author 段誉
-     * @date 2022/11/24 16:17
      */
     public function setExcelFields(): array
     {
         return [
-            'sn' => '用户编号',
-            'nickname' => '用户昵称',
-            'account' => '账号',
-            'mobile' => '手机号码',
-            'channel' => '注册来源',
-            'create_time' => '注册时间',
+            'sn' => '订单号',
+            'user_sn' => '客户ID',
+            'nickname' => '昵称',
+            'account_show' => '充值账户',
+            'account_type_show' => '运营商',
+            'price' => '金额',
+            'balances_price' => '到账金额',
+            'down_price' => '余额',
+            'name_show' => '名字',
+            'pay_price' => '支付金额',
+            'type_show' => '类型',
+            'status_show' => '状态',
+            'time' => '时间',
         ];
     }
 
