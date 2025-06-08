@@ -76,7 +76,9 @@ class AdOrderLists extends BaseAdminDataLists implements ListsSearchInterface
                 $aliasD . 'cancel_type',
                 'a.name as admin_name',
                 'u.nickname as username',
+                'u.sn as user_sn',
                 'uu.nickname as to_username',
+                'uu.sn as to_user_sn',
             ])->alias($alias)
             ->leftJoin('user u', $aliasD . 'user_id = u.id')
             ->leftJoin('user uu', $aliasD . 'to_user_id = uu.id')

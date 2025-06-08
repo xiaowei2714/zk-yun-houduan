@@ -55,8 +55,24 @@ class WithdrawLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
+        $alias = 'w';
+        $aliasD = $alias . '.';
         $list = Withdraw::where($this->searchWhere)
-            ->field(['id', 'user_id', 'money', 'address', 'order_no', 'create_time', 'pay_time', 'status', 'fail_msg'])
+            ->field([
+                $aliasD . 'id',
+                $aliasD . 'user_id',
+                $aliasD . 'user_id',
+                $aliasD . 'money',
+                $aliasD . 'address',
+                $aliasD . 'order_no',
+                $aliasD . 'create_time',
+                $aliasD . 'pay_time',
+                $aliasD . 'status',
+                $aliasD . 'fail_msg',
+                'u.sn as user_sn',
+            ])
+            ->alias($alias)
+            ->leftJoin('user u', $aliasD . 'user_id = u.id')
             ->limit($this->limitOffset, $this->limitLength)
             ->order(['id' => 'desc'])
             ->select()

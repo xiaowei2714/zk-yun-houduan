@@ -46,6 +46,7 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
             $aliasD . 'status',
             $aliasD . 'create_time',
             'a.name as admin_name',
+            'u.sn as user_sn',
             'u.nickname'
         ])
             ->alias($alias)
@@ -62,7 +63,8 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface
             $newData[] = [
                 'id' => $value['id'],
                 'user_id' => $value['user_id'],
-                'nickname' =>$value['nickname'],
+                'user_sn' => $value['user_sn'],
+                'nickname' => $value['nickname'],
                 'money' => $value['pay_money'],
                 'desc' => $value['desc'],
                 'order_no' => $value['order_no'],

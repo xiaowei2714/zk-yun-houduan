@@ -48,6 +48,7 @@ class AdLists extends BaseAdminDataLists implements ListsSearchInterface
                 $aliasD . 'status',
                 $aliasD . 'create_time',
                 'u.nickname as username',
+                'u.sn as user_sn',
             ])->alias($alias)
             ->leftJoin('user u', $aliasD . 'user_id = u.id')
             ->limit($this->limitOffset, $this->limitLength)

@@ -109,7 +109,7 @@ class ConsumeRechargeLists extends BaseAdminDataLists implements ListsExcelInter
                 'id' => $item['id'],
                 'sn' => $item['sn'],
                 'admin_name' => $item['admin_name'],
-                'user_show' => '[ID: ' . $item['user_id'] . '] ' . $item['nickname'],
+                'user_show' => $item['user_sn'],
                 'account_show' => $item['account'],
                 'account_type_show' => $accountTypeShow,
                 'name_show' => $nameArea,

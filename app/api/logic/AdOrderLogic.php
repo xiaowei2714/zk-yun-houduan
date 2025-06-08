@@ -520,11 +520,14 @@ class AdOrderLogic extends BaseLogic
                 return false;
             }
 
+            // 获取买方信息
+            $buyUserInfo = User::where('id', $adOrderInfo['user_id'])->find();
+
             // 卖方流水
             $billData = [
                 'user_id' => $adOrderInfo['to_user_id'],
                 'type' => 13,
-                'desc' => $userInfo['sn'] . ' 购买Y币扣除',
+                'desc' => $buyUserInfo['sn'] . ' 购买Y币扣除',
                 'change_type' => 2,
                 'change_money' => $adOrderInfo['num'],
                 'changed_money' => $userInfo['freeze_money'],

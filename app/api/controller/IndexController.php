@@ -17,6 +17,7 @@ namespace app\api\controller;
 use app\api\logic\IndexLogic;
 use app\api\logic\LoginLogic;
 use app\api\logic\MealLogic;
+use app\api\logic\SubstationLogic;
 use app\api\logic\UserMealLogic;
 use app\api\service\UserMealService;
 use app\api\service\UserTokenService;
@@ -996,7 +997,7 @@ class IndexController extends BaseApiController
         Db::startTrans();
         try {
             if (!self::verifyCode($postData['email'], $postData['code'])) {
-//                throw new \Exception('验证码错误或已过期');
+                throw new \Exception('验证码错误或已过期');
             }
 
             $writeOffUser = WriteOffUser::where('email', $postData['email'])->find();
@@ -1050,16 +1051,19 @@ class IndexController extends BaseApiController
             // 我的注册上级为分站站长时，所有话费电费等折扣默认为10折
             if (!empty($p_first_user_id)) {
 
-                $userMealLogic = new UserMealLogic();
+                $substationInfo = SubstationLogic::info($p_first_user_id);
+                if (!empty($substationInfo['id'])) {
+                    $userMealLogic = new UserMealLogic();
 
-                // 获取套餐列表
-                $mealList = (new MealLogic())->getMealList();
-                if (!empty($mealList)) {
-                    foreach ($mealList as $value) {
-                        $tmpRes = $userMealLogic->addData($res['id'], $value['id'], 10);
-                        if (!$tmpRes) {
-                            Db::rollback();
-                            return $this->fail('注册设置套餐失败');
+                    // 获取套餐列表
+                    $mealList = (new MealLogic())->getMealList();
+                    if (!empty($mealList)) {
+                        foreach ($mealList as $value) {
+                            $tmpRes = $userMealLogic->addData($res['id'], $value['id'], 10);
+                            if (!$tmpRes) {
+                                Db::rollback();
+                                return $this->fail('注册设置套餐失败');
+                            }
                         }
                     }
                 }

@@ -25,6 +25,7 @@ class CancelOrder
 
         } catch (Exception $e) {
             Log::record('Exception: job-CancelOrder Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            $job->delete();
             return false;
         }
     }
