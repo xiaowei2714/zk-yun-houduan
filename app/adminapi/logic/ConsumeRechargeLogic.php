@@ -127,7 +127,7 @@ class ConsumeRechargeLogic extends BaseLogic
     public static function getData($ids)
     {
         try {
-            return ConsumeRecharge::field(['id', 'sn', 'status', 'type', 'account', 'name_area'])
+            return ConsumeRecharge::field(['id', 'sn', 'status', 'type', 'account', 'name_area', 'is_external'])
                 ->whereIn('id', $ids)
                 ->select()
                 ->toArray();
@@ -158,6 +158,7 @@ class ConsumeRechargeLogic extends BaseLogic
                 $aliasD . 'pay_price',
                 $aliasD . 'user_id',
                 $aliasD . 'recharge_price',
+                $aliasD . 'is_external',
                 $aliasD . 'create_time',
                 'u.p_first_user_id as first_user_id',
                 'u.p_second_user_id as second_user_id',

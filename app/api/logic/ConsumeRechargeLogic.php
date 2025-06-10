@@ -208,10 +208,26 @@ class ConsumeRechargeLogic extends BaseLogic
     }
 
     /**
+     * 详情
+     *
+     * @param $sn
+     * @return ConsumeRecharge|array|false|\think\Model|null
+     */
+    public static function getStatusBySn($sn)
+    {
+        try {
+            return ConsumeRecharge::field('id,status,is_external')->where('sn', '=', $sn)->find();
+        } catch (Exception $e) {
+            Log::record('Exception: Sql-ConsumeRechargeLogic-getStatusBySn Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return false;
+        }
+    }
+
+    /**
      * 充值
      *
      * @param array $params
-     * @return bool
+     * @return false|string
      */
     public static function recharge(array $params)
     {
@@ -319,7 +335,7 @@ class ConsumeRechargeLogic extends BaseLogic
             }
 
             Db::commit();
-            return true;
+            return $sn;
 
         } catch (Exception $e) {
             Log::record('Exception: Sql-ConsumeRechargeLogic-recharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());

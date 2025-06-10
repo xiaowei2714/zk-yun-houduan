@@ -23,7 +23,7 @@ use Exception;
  */
 class ConsumeRechargeController extends BaseApiController
 {
-    public array $notNeedLogin = ['externalRecharge'];
+    public array $notNeedLogin = ['externalRecharge', 'getStatus'];
 
     /**
      * 列表
@@ -379,7 +379,7 @@ class ConsumeRechargeController extends BaseApiController
         try {
 
             $params = $this->request->post();
-            if (empty($params['user_code'])) {
+            if (empty($params['key'])) {
                 return $this->fail('用户不能为空');
             }
             if (empty($params['account'])) {
@@ -401,7 +401,7 @@ class ConsumeRechargeController extends BaseApiController
             ];
 
             // 验证用户
-            $userInfo = UserLogic::infoByExternalSn($params['user_code']);
+            $userInfo = UserLogic::infoByExternalSn($params['key']);
             if (empty($userInfo)) {
                 return $this->fail('当前用户不可用，请联系客服');
             }
@@ -601,6 +601,7 @@ class ConsumeRechargeController extends BaseApiController
         }
 
         return $this->data([
+            'order_code' => $result,
             'msg' => '充值成功'
         ]);
     }
@@ -960,6 +961,47 @@ class ConsumeRechargeController extends BaseApiController
             'msg' => $msg
         ]);
     }
+
+    /**
+     * 获取状态
+     *
+     * @return Json
+     */
+    public function getStatus(): Json
+    {
+        try {
+            $params = $this->request->get();
+            if (empty($params['order_code'])) {
+                return $this->fail('订单号不能为空');
+            }
+
+            $serviceObj = new ConsumeRechargeService();
+            $status = $serviceObj->getStatus($params['order_code']);
+            if (!empty($status)) {
+                return $this->data([
+                    'status' => $status
+                ]);
+            }
+
+            $data = ConsumeRechargeLogic::getStatusBySn($params['order_code']);
+            if (empty($data) || empty($data['id'])) {
+                return $this->fail('查询不到该订单');
+            }
+            if ($data['is_external'] != 1) {
+                return $this->fail('无权限查看该订单');
+            }
+
+            $status = $serviceObj->setStatus($params['order_code'], $data['status']);
+            return $this->data([
+                'status' => $status
+            ]);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-ConsumeRechargeController-getStatus Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
 
     /**
      * 取消充值

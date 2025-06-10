@@ -3,6 +3,7 @@
 namespace app\common\service;
 
 use Exception;
+use think\facade\Cache;
 use think\facade\Config;
 use think\facade\Log;
 
@@ -11,6 +12,48 @@ class ConsumeRechargeService
 //    const USE_MOCK = true;
     const USE_MOCK = false;
     protected array $header = [];
+
+    /**
+     * @param $status
+     * @return string
+     */
+    public function statusChange($status)
+    {
+        $conf = [
+            1 => 'PENDING',
+            2 => 'RECHARGING',
+            3 => 'SUCCESS',
+            4 => 'FAIL',
+            5 => 'PART_SUCCESS',
+        ];
+
+        return $conf[$status] ?? '';
+    }
+
+    /**
+     * @param $orderCode
+     * @param $status
+     * @return string
+     */
+    public function setStatus($orderCode, $status)
+    {
+        $cacheKey = 'ORDER_STATUS_' . $orderCode;
+
+        $statusShow = $this->statusChange($status);
+        Cache::set($cacheKey, $statusShow, 3600);
+
+        return $statusShow;
+    }
+
+    /**
+     * @param $orderCode
+     * @return mixed
+     */
+    public function getStatus($orderCode)
+    {
+        $cacheKey = 'ORDER_STATUS_' . $orderCode;
+        return Cache::get($cacheKey);
+    }
 
     /**
      * 获取手机余额

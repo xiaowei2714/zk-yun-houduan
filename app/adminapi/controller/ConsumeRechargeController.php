@@ -82,6 +82,10 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败');
             }
 
+            if ($info['is_external'] == 1) {
+                (new ConsumeRechargeService())->setStatus($info['sn'], 2);
+            }
+
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
@@ -107,6 +111,7 @@ class ConsumeRechargeController extends BaseAdminController
 
             $selectIds = [];
             $updateIds = [];
+            $updateSns = [];
             $failMsg = '';
             foreach ($data as $value) {
 
@@ -125,12 +130,21 @@ class ConsumeRechargeController extends BaseAdminController
                 }
 
                 $updateIds[] = $value['id'];
+                if ($value['is_external'] == 1) {
+                    $updateSns[] = $value['sn'];
+                }
             }
 
             if (!empty($updateIds)) {
                 $res = ConsumeRechargeLogic::setBatchRecharging($updateIds, $this->adminId);
                 if (!$res) {
                     return $this->fail('批量设置失败');
+                }
+
+                if (!empty($updateSns)) {
+                    foreach ($updateSns as $sn) {
+                        (new ConsumeRechargeService())->setStatus($sn, 2);
+                    }
                 }
             }
 
@@ -230,6 +244,10 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败');
             }
 
+            if ($info['is_external'] == 1) {
+                (new ConsumeRechargeService())->setStatus($info['sn'], 3);
+            }
+
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
@@ -325,6 +343,10 @@ class ConsumeRechargeController extends BaseAdminController
                 if (!$res) {
                     $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
                 }
+
+                if ($value['is_external'] == 1) {
+                    (new ConsumeRechargeService())->setStatus($value['sn'], 3);
+                }
             }
 
             if (!empty($failMsg)) {
@@ -355,7 +377,7 @@ class ConsumeRechargeController extends BaseAdminController
         $params = (new ConsumeRechargeValidate())->post()->goCheck('needId');
 
         try {
-            if (empty($params['value']) ){
+            if (empty($params['value'])) {
                 return $this->fail('请正确输入金额');
             }
 
@@ -430,6 +452,10 @@ class ConsumeRechargeController extends BaseAdminController
                 return $this->fail('设置失败');
             }
 
+            if ($info['is_external'] == 1) {
+                (new ConsumeRechargeService())->setStatus($info['sn'], 5);
+            }
+
             return $this->success('设置成功', [], 1, 1);
 
         } catch (Exception $e) {
@@ -465,6 +491,10 @@ class ConsumeRechargeController extends BaseAdminController
             $res = ConsumeRechargeLogic::setFail($info['id'], $this->adminId);
             if (!$res) {
                 return $this->fail(ConsumeRechargeLogic::getError());
+            }
+
+            if ($info['is_external'] == 1) {
+                (new ConsumeRechargeService())->setStatus($info['sn'], 4);
             }
 
             return $this->success('设置成功', [], 1, 1);
@@ -507,6 +537,10 @@ class ConsumeRechargeController extends BaseAdminController
                 $res = ConsumeRechargeLogic::setFail($value['id'], $this->adminId);
                 if (!$res) {
                     $failMsg .= '单号：' . $value['sn'] . ' ' . ConsumeRechargeLogic::getError();
+                }
+
+                if ($value['is_external'] == 1) {
+                    (new ConsumeRechargeService())->setStatus($value['sn'], 4);
                 }
             }
 
