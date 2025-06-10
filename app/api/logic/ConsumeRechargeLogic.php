@@ -296,7 +296,8 @@ class ConsumeRechargeLogic extends BaseLogic
                 'meal_discount' => $params['meal_discount'],
                 'pay_price' => $params['pay_price'],
                 'rate' => $params['rate'],
-                'type' => $params['type']
+                'type' => $params['type'],
+                'is_external' => isset($params['is_external']) && $params['is_external'] === true ? 1 : 0,
             ];
 
             if (isset($params['meal_id'])) {

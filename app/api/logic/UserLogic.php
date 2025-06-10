@@ -84,6 +84,20 @@ class UserLogic extends BaseLogic
     }
 
     /**
+     * 个人信息
+     *
+     * @param $sn
+     * @return array
+     */
+    public static function infoByExternalSn($sn)
+    {
+        return User::where('external_sn', '=', $sn)
+            ->field('id')
+            ->findOrEmpty()
+            ->toArray();
+    }
+
+    /**
      * @param int $userId
      * @return User|array|mixed|Model
      */

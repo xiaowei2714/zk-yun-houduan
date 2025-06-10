@@ -68,6 +68,9 @@ class UserMealService
     public function getMealInfo($id, $userId, $rate): array
     {
         $mealInfo = (new MealLogic())->getMealInfo($id);
+        if (empty($mealInfo['id'])) {
+            return [];
+        }
 
         $data = [
             'id' => $mealInfo['id'],

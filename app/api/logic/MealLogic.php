@@ -58,7 +58,7 @@ class MealLogic extends BaseLogic
         try {
             return SetMeal::where(['id' => $id])
                 ->order('sort','desc')
-                ->find()
+                ->findOrEmpty()
                 ->toArray();
         } catch (\Exception $e) {
             self::setError($e->getMessage());

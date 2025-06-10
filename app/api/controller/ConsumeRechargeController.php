@@ -23,6 +23,8 @@ use Exception;
  */
 class ConsumeRechargeController extends BaseApiController
 {
+    public array $notNeedLogin = ['externalRecharge'];
+
     /**
      * 列表
      *
@@ -368,48 +370,111 @@ class ConsumeRechargeController extends BaseApiController
     }
 
     /**
+     * 外部充值
+     *
+     * @return Json
+     */
+    public function externalRecharge(): Json
+    {
+        try {
+
+            $params = $this->request->post();
+            if (empty($params['user_code'])) {
+                return $this->fail('用户不能为空');
+            }
+            if (empty($params['account'])) {
+                return $this->fail('号码不能为空');
+            }
+            if (empty($params['meal_id'])) {
+                return $this->fail('充值策略不能为空');
+            }
+            if (empty($params['type'])) {
+                return $this->fail('类型不能为空');
+            }
+
+            $newParams = [
+                'user_id' => '',
+                'account' => $params['account'],
+                'meal_id' => (int)$params['meal_id'],
+                'name' => $params['name'] ?? '',
+                'type' => (int)$params['type'],
+            ];
+
+            // 验证用户
+            $userInfo = UserLogic::infoByExternalSn($params['user_code']);
+            if (empty($userInfo)) {
+                return $this->fail('当前用户不可用，请联系客服');
+            }
+
+            $newParams['user_id'] = $userInfo['id'];
+
+            return $this->commonRecharge($newParams, true);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-ConsumeRechargeController-externalRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
+    /**
      * @param $params
+     * @param $isExternal
      * @return Json
      * @throws Exception
      */
-    private function commonRecharge($params): Json
+    private function commonRecharge($params, $isExternal = false): Json
     {
         $newParams = [
             'user_id' => $params['user_id'],
             'account' => '',
             'account_type' => null,
             'name_area' => '',
-            'recharge_price' => $params['money'],
+            'recharge_price' => null,
             'meal_id' => $params['meal_id'],
-            'meal_discount' => $params['meal_discount'] ?? '',
+            'meal_discount' => null,
             'pay_price' => null,
             'rate' => null,
-            'type' => $params['type']
+            'type' => $params['type'],
+            'is_external' => $isExternal
         ];
 
         // 验证数据
-        if ($newParams['type'] == 1 || $newParams['type'] == 3) {
-            if (!isset($params['name'])) {
-                $params['name'] = '';
-            }
-            if (mb_strlen($params['name']) > 30) {
-                return $this->fail('机主姓名不能超过30个字符');
-            }
+        if (!$isExternal) {
+            if ($newParams['type'] == 1 || $newParams['type'] == 3) {
+                if (!isset($params['name'])) {
+                    $params['name'] = '';
+                }
+                if (mb_strlen($params['name']) > 30) {
+                    return $this->fail('机主姓名不能超过30个字符');
+                }
 
-            $newParams['account'] = $params['phone'];
+                $newParams['account'] = $params['phone'];
+                $newParams['name_area'] = $params['name'];
+
+            } elseif ($newParams['type'] == 2) {
+                if (strlen($params['number']) > 30) {
+                    return $this->fail('户号不能超过30个字符');
+                }
+
+                $newParams['account'] = $params['number'];
+                $newParams['name_area'] = $params['area'];
+            }
+        } else {
+            $newParams['account'] = $params['account'];
             $newParams['name_area'] = $params['name'];
 
-        } elseif ($newParams['type'] == 2) {
-            if (strlen($params['number']) > 30) {
-                return $this->fail('户号不能超过30个字符');
-            }
+            if ($newParams['type'] == 2) {
+                $areaData = array_flip(Config::get('project.area'));
+                if (!isset($areaData[$params['name']])) {
+                    return $this->fail('不支持的地区充值');
+                }
 
-            $newParams['account'] = $params['number'];
-            $newParams['name_area'] = $params['area'];
+                $newParams['name_area'] = $areaData[$params['name']];
+            }
         }
 
         // 验证用户
-        $userInfo = UserLogic::info($this->userId);
+        $userInfo = UserLogic::info($params['user_id']);
         if (empty($userInfo)) {
             return $this->fail('当前用户不可用，请联系客服');
         }
@@ -426,16 +491,16 @@ class ConsumeRechargeController extends BaseApiController
         $newParams['rate'] = $rate;
 
         // 获取优惠配置
-        $mealInfo = (new UserMealService())->getMealInfo($newParams['meal_id'], $this->userId, $rate);
+        $mealInfo = (new UserMealService())->getMealInfo($newParams['meal_id'], $params['user_id'], $rate);
+        if (empty($mealInfo)) {
+            return $this->fail('未获取到该套餐信息');
+        }
         if ($mealInfo['type'] != $newParams['type']) {
             return $this->fail('充值信息发生变化，请重新进入充值页面');
         }
-        if (bccomp($mealInfo['price'], $newParams['recharge_price'], 2) != 0) {
-            return $this->fail('充值信息发生变化，请重新进入充值页面');
-        }
-        if (bccomp($mealInfo['real_discount'], $newParams['meal_discount'], 2) != 0) {
-            return $this->fail('充值折扣发生变化，请重新进入充值页面');
-        }
+
+        $newParams['recharge_price'] = $mealInfo['price'];
+        $newParams['meal_discount'] = $mealInfo['real_discount'];
 
         // 话费号段验证
         if ($newParams['type'] == 1 || $newParams['type'] == 3) {

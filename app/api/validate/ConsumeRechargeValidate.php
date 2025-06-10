@@ -3,7 +3,6 @@
 
 namespace app\api\validate;
 
-use app\common\enum\PayEnum;
 use app\common\service\ConfigService;
 use app\common\validate\BaseValidate;
 
@@ -19,7 +18,7 @@ class ConsumeRechargeValidate extends BaseValidate
         'meal_id' =>  ['require', 'number'],
         'meal_discount' => 'require',
         'meal_discounted_price' => 'require',
-        'money' => 'require|gt:0|checkMoney',
+        'money' => 'require|gt:0',
         'phone' => ['require', 'regex' => '/^1[3456789]\d{9}$/'],
         'batch_data' => 'require',
         'number' => 'require',
@@ -134,24 +133,6 @@ class ConsumeRechargeValidate extends BaseValidate
 
         if ($money < $minAmount) {
             return '最低充值金额' . $minAmount . "元";
-        }
-
-        return true;
-    }
-
-    /**
-     * @notes 校验金额
-     * @param $money
-     * @param $rule
-     * @param $data
-     * @return bool|string
-     * @author 段誉
-     * @date 2023/2/24 10:42
-     */
-    protected function checkPhone($money, $rule, $data)
-    {
-        if (!preg_match("/^1[3456789]\d{9}$/", $params['phone'])) {
-            return $this->fail('请正确输入手机号');
         }
 
         return true;

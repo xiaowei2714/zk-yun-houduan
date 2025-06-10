@@ -1032,6 +1032,7 @@ class IndexController extends BaseApiController
 
             $res = User::create([
                 'sn' => $userSn,
+                'external_sn' => md5(time() . random_int(0, 100000000), true),
                 'avatar' => $avatar,
                 'nickname' => '用户' . $userSn,
                 'account' => $postData['email'],
