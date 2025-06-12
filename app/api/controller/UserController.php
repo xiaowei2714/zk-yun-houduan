@@ -440,8 +440,8 @@ class UserController extends BaseApiController
                 }
 
                 $tmpCurUserMeal = $curUserMealList[$value['id']] ?? 10;
-                if (bccomp($tmpCurUserMeal,  $paramsList[$value['id']], 3) > 0) {
-                    $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：最低折扣不能超过' . sprintf('%g', $tmpCurUserMeal) . '折'. PHP_EOL;
+                if (bccomp($tmpCurUserMeal, $paramsList[$value['id']], 3) > 0) {
+                    $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：最低折扣不能超过' . sprintf('%g', $tmpCurUserMeal) . '折' . PHP_EOL;
                     continue;
                 }
 
@@ -461,7 +461,7 @@ class UserController extends BaseApiController
                 } else {
                     $res = $userMealLogic->updateData($userMealId, $paramsList[$value['id']]);
                     if (!$res) {
-                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError(). PHP_EOL;
+                        $failMsg .= $value['name'] . '（' . $typeShow . '）更改失败：' . UserMealLogic::getError() . PHP_EOL;
                     }
                 }
             }
@@ -473,9 +473,36 @@ class UserController extends BaseApiController
             return $this->success('更新成功');
 
         } catch (Exception $e) {
-            var_dump( $e->getMessage());
             Log::record('Exception: api-UserController-setFriendDiscount Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
         }
     }
+
+    /**
+     * 获取用户API
+     *
+     * @return Json
+     */
+    public function getUserAPI(): Json
+    {
+        try {
+            $userInfo = UserLogic::info($this->userId);
+            if (empty($userInfo)) {
+                return $this->fail('当前用户不可用，请联系客服');
+            }
+            if ($userInfo['is_disable'] == 1) {
+                return $this->fail('当前用户账号异常，请联系客服');
+            }
+            $newData = [
+                'key' => $userInfo['external_sn']
+            ];
+
+            return $this->success('', $newData);
+
+        } catch (Exception $e) {
+            Log::record('Exception: api-UserController-getUserAPI Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
+            return $this->fail('系统错误');
+        }
+    }
+
 }
