@@ -1015,7 +1015,7 @@ class IndexController extends BaseApiController
             $p_three_user_id = 0;
             $invite_code = User::generateInviteCode();
 
-            if ($postData['invite_code']) {
+            if (!empty($postData['invite_code']) && $postData['invite_code'] != 'undefined') {
                 $inviter = (new \app\common\model\user\User)->where('invite_code', $postData['invite_code'])->find();
                 if (!$inviter) {
                     throw new \Exception('邀请码无效');
@@ -1032,7 +1032,7 @@ class IndexController extends BaseApiController
 
             $res = User::create([
                 'sn' => $userSn,
-                'external_sn' => md5(time() . random_int(0, 100000000), true),
+                'external_sn' => md5(time() . random_int(0, 100000000)),
                 'avatar' => $avatar,
                 'nickname' => '用户' . $userSn,
                 'account' => $postData['email'],

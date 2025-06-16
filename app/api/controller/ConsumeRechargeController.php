@@ -314,13 +314,27 @@ class ConsumeRechargeController extends BaseApiController
     public function phoneRecharge(): Json
     {
         $params = (new ConsumeRechargeValidate())->post()->goCheck('phoneRecharge', [
-            'user_id' => $this->userId,
-            'terminal' => $this->userInfo['terminal'],
-            'type' => 1
+            'user_id' => $this->userId
         ]);
 
         try {
-            return $this->commonRecharge($params);
+            if (!isset($params['name'])) {
+                $params['name'] = '';
+            }
+            if (mb_strlen($params['name']) > 30) {
+                return $this->fail('机主姓名不能超过30个字符');
+            }
+
+            $newParams = [
+                'user_id' => $this->userId,
+                'account' => $params['phone'],
+                'meal_id' => (int)$params['meal_id'],
+                'name_area' => $params['name'],
+                'type' => 1
+            ];
+
+            return $this->commonRecharge($newParams);
+
         } catch (Exception $e) {
             Log::record('Exception: api-ConsumeRechargeController-phoneRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
@@ -335,13 +349,29 @@ class ConsumeRechargeController extends BaseApiController
     public function electricityRecharge(): Json
     {
         $params = (new ConsumeRechargeValidate())->post()->goCheck('electricityRecharge', [
-            'user_id' => $this->userId,
-            'terminal' => $this->userInfo['terminal'],
-            'type' => 2
+            'user_id' => $this->userId
         ]);
 
         try {
-            return $this->commonRecharge($params);
+            if (strlen($params['number']) > 30) {
+                return $this->fail('户号不能超过30个字符');
+            }
+
+            $areaData = Config::get('project.area');
+            if (!isset($areaData[$params['area']])) {
+                return $this->fail('不支持的地区充值');
+            }
+
+            $newParams = [
+                'user_id' => $this->userId,
+                'account' => $params['number'],
+                'meal_id' => (int)$params['meal_id'],
+                'name_area' => $params['area'],
+                'type' => 2
+            ];
+
+            return $this->commonRecharge($newParams);
+
         } catch (Exception $e) {
             Log::record('Exception: api-ConsumeRechargeController-electricityRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
@@ -356,13 +386,27 @@ class ConsumeRechargeController extends BaseApiController
     public function quicklyRecharge(): Json
     {
         $params = (new ConsumeRechargeValidate())->post()->goCheck('phoneRecharge', [
-            'user_id' => $this->userId,
-            'terminal' => $this->userInfo['terminal'],
-            'type' => 3
+            'user_id' => $this->userId
         ]);
 
         try {
-            return $this->commonRecharge($params);
+            if (!isset($params['name'])) {
+                $params['name'] = '';
+            }
+            if (mb_strlen($params['name']) > 30) {
+                return $this->fail('机主姓名不能超过30个字符');
+            }
+
+            $newParams = [
+                'user_id' => $this->userId,
+                'account' => $params['phone'],
+                'meal_id' => (int)$params['meal_id'],
+                'name_area' => $params['name'],
+                'type' => 3
+            ];
+
+            return $this->commonRecharge($newParams);
+
         } catch (Exception $e) {
             Log::record('Exception: api-ConsumeRechargeController-quicklyRecharge Error: ' . $e->getMessage() . ' 文件：' . $e->getFile() . ' 行号：' . $e->getLine());
             return $this->fail('系统错误');
@@ -396,7 +440,7 @@ class ConsumeRechargeController extends BaseApiController
                 'user_id' => '',
                 'account' => $params['account'],
                 'meal_id' => (int)$params['meal_id'],
-                'name' => $params['name'] ?? '',
+                'name_area' => $params['name'] ?? '',
                 'type' => (int)$params['type'],
             ];
 
@@ -407,6 +451,15 @@ class ConsumeRechargeController extends BaseApiController
             }
 
             $newParams['user_id'] = $userInfo['id'];
+
+            if ($newParams['type'] == 2) {
+                $areaData = array_flip(Config::get('project.area'));
+                if (!isset($areaData[$newParams['name_area']])) {
+                    return $this->fail('不支持的地区充值');
+                }
+
+                $newParams['name_area'] = $newParams[$params['name_area']];
+            }
 
             return $this->commonRecharge($newParams, true);
 
@@ -426,9 +479,9 @@ class ConsumeRechargeController extends BaseApiController
     {
         $newParams = [
             'user_id' => $params['user_id'],
-            'account' => '',
+            'account' => $params['account'],
             'account_type' => null,
-            'name_area' => '',
+            'name_area' => $params['name_area'],
             'recharge_price' => null,
             'meal_id' => $params['meal_id'],
             'meal_discount' => null,
@@ -437,41 +490,6 @@ class ConsumeRechargeController extends BaseApiController
             'type' => $params['type'],
             'is_external' => $isExternal
         ];
-
-        // 验证数据
-        if (!$isExternal) {
-            if ($newParams['type'] == 1 || $newParams['type'] == 3) {
-                if (!isset($params['name'])) {
-                    $params['name'] = '';
-                }
-                if (mb_strlen($params['name']) > 30) {
-                    return $this->fail('机主姓名不能超过30个字符');
-                }
-
-                $newParams['account'] = $params['phone'];
-                $newParams['name_area'] = $params['name'];
-
-            } elseif ($newParams['type'] == 2) {
-                if (strlen($params['number']) > 30) {
-                    return $this->fail('户号不能超过30个字符');
-                }
-
-                $newParams['account'] = $params['number'];
-                $newParams['name_area'] = $params['area'];
-            }
-        } else {
-            $newParams['account'] = $params['account'];
-            $newParams['name_area'] = $params['name'];
-
-            if ($newParams['type'] == 2) {
-                $areaData = array_flip(Config::get('project.area'));
-                if (!isset($areaData[$params['name']])) {
-                    return $this->fail('不支持的地区充值');
-                }
-
-                $newParams['name_area'] = $areaData[$params['name']];
-            }
-        }
 
         // 验证用户
         $userInfo = UserLogic::info($params['user_id']);
