@@ -77,7 +77,6 @@ class ConsumeRechargeController extends BaseAdminController
             }
 
             $res = ConsumeRechargeLogic::setRecharging($info['id'], $this->adminId);
-
             if (!$res) {
                 return $this->fail('设置失败');
             }
@@ -241,7 +240,7 @@ class ConsumeRechargeController extends BaseAdminController
 
             $res = ConsumeRechargeLogic::setSuccess($info, $ratioData, $this->adminId);
             if (!$res) {
-                return $this->fail('设置失败');
+                return $this->fail(ConsumeRechargeLogic::getError());
             }
 
             if ($info['is_external'] == 1) {
@@ -449,7 +448,7 @@ class ConsumeRechargeController extends BaseAdminController
 
             $res = ConsumeRechargeLogic::setPartSuccess($info, $ratioData, $this->adminId, $params['value']);
             if (!$res) {
-                return $this->fail('设置失败');
+                return $this->fail(ConsumeRechargeLogic::getError());
             }
 
             if ($info['is_external'] == 1) {

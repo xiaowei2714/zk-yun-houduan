@@ -152,7 +152,7 @@ class UserController extends BaseAdminController
      */
     public function edit()
     {
-        $params = (new UserValidate())->post()->goCheck('setInfo');
+        $params = (new UserValidate())->post()->goCheck('detail');
         UserLogic::setUserInfo($params);
         return $this->success('操作成功', [], 1, 1);
     }

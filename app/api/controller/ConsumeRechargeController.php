@@ -576,7 +576,7 @@ class ConsumeRechargeController extends BaseApiController
         }
 
         $statusArr = [1, 2];
-        $num = ConsumeRechargeLogic::getCountByType($newParams['type'], $statusArr);
+        $num = ConsumeRechargeLogic::getCountByType($params['account'], $newParams['type'], $statusArr);
         $num += 1;
         if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
             return $this->fail('暂时达到同时存在订单上限，请稍后再试');
@@ -891,20 +891,20 @@ class ConsumeRechargeController extends BaseApiController
             return $this->fail('暂时达到每日该套餐充值数量上限，请稍后再试');
         }
 
-        $statusArr = [1, 2];
-        $num = ConsumeRechargeLogic::getCountByType($params['type'], $statusArr);
-        $num += $dataNum;
-        if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
-            return $this->fail('暂时达到每日同时存在订单上限，请稍后再试');
-        }
-
         $msg = '';
         $haveFail = false;
+        $statusArr = [1, 2];
         foreach ($batchData as $value) {
             $tmpData = explode(' ', $value);
             if (empty($tmpData[0])) {
                 $msg .= $value . ' 请正确输入手机号' . PHP_EOL;
                 continue;
+            }
+
+            $num = ConsumeRechargeLogic::getCountByType($tmpData[0], $params['type'], $statusArr);
+            $num += 1;
+            if (bccomp($mealInfo['meanwhile_order_num'], $num) < 0) {
+                return $this->fail($value . ' 暂时达到同时存在订单上限，请稍后再试');
             }
 
             $tmpParams = [

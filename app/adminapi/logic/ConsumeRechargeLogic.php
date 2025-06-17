@@ -7,6 +7,9 @@ use app\common\logic\BaseLogic;
 use app\common\model\notice\NoticeRecord;
 use app\common\model\user\User;
 use app\common\model\UserMoneyLog;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\facade\Db;
 use think\facade\Log;
 use think\Model;
@@ -264,188 +267,30 @@ class ConsumeRechargeLogic extends BaseLogic
                     break;
             }
 
-            $billDesc = $desc . '充值';
-
             // 返佣第一人
             if (!empty($info['first_user_id']) && !empty($ratioData['first_ratio'])) {
-
-                $tmpUserId = $info['first_user_id'];
-
-                // 查看是否已返佣过
-                $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
-                if (empty($res['id'])) {
-
-                    if ($ratioData['first_ratio'] > 100 || $ratioData['first_ratio'] < 0) {
-                        self::setError('更新失败，第一返佣比例有误');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $ratio = bcdiv($ratioData['first_ratio'], 100, 4);
-                    $givePrice = bcmul($info['pay_price'], $ratio, 4);
-                    $givePrice = number_format($givePrice, 2);
-
-                    // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)
-                        ->inc('user_money', $givePrice)
-                        ->inc('total_award_price', $givePrice)
-                        ->update([
-                            'update_time' => time()
-                        ]);
-
-                    if (!$res) {
-                        self::setError('增加返佣第一人账户余额失败，ID：' . $tmpUserId);
-                        Db::rollback();
-                        return false;
-                    }
-
-                    // 获取用户余额
-                    $userInfo = User::where('id', $tmpUserId)->find();
-                    if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
-                        self::setError('返佣第一人账户异常');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $billData = [
-                        'user_id' => $tmpUserId,
-                        'n_user_id' => $info['user_id'],
-                        'type' => 3,
-                        'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['first_ratio'] . '%',
-                        'change_type' => 1,
-                        'change_money' => $givePrice,
-                        'changed_money' => $userInfo['user_money'] ?? 0,
-                        'source_sn' => $info['sn']
-                    ];
-
-                    $res = UserMoneyLog::create($billData);
-                    if (empty($res['id'])) {
-                        self::setError('记录流水失败');
-                        Db::rollback();
-                        return false;
-                    }
+                $res = self::backMoney($info['sn'], $info['pay_price'], $info['user_id'], $desc, $info['first_user_id'], $ratioData['first_ratio']);
+                if ($res === false) {
+                    self::setError('更新成功失败，返佣第一人失败：' . self::getError());
+                    return false;
                 }
             }
 
             // 返佣第二人
             if (!empty($info['second_user_id']) && !empty($ratioData['second_ratio'])) {
-
-                $tmpUserId = $info['second_user_id'];
-
-                // 查看是否已返佣过
-                $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
-                if (empty($res['id'])) {
-
-                    if ($ratioData['second_ratio'] > 100 || $ratioData['second_ratio'] < 0) {
-                        self::setError('更新失败，第二返佣比例有误');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $ratio = bcdiv($ratioData['second_ratio'], 100, 4);
-                    $givePrice = bcmul($info['pay_price'], $ratio, 4);
-                    $givePrice = number_format($givePrice, 2);
-
-                    // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)
-                        ->inc('user_money', $givePrice)
-                        ->inc('total_award_price', $givePrice)
-                        ->update([
-                            'update_time' => time()
-                        ]);
-
-                    if (!$res) {
-                        self::setError('增加返佣第二人账户余额失败，ID：' . $tmpUserId);
-                        Db::rollback();
-                        return false;
-                    }
-
-                    // 获取用户余额
-                    $userInfo = User::where('id', $tmpUserId)->find();
-                    if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
-                        self::setError('返佣第二人账户异常');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $billData = [
-                        'user_id' => $tmpUserId,
-                        'n_user_id' => $info['user_id'],
-                        'type' => 3,
-                        'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['second_ratio'] . '%',
-                        'change_type' => 1,
-                        'change_money' => $givePrice,
-                        'changed_money' => $userInfo['user_money'] ?? 0,
-                        'source_sn' => $info['sn']
-                    ];
-
-                    $res = UserMoneyLog::create($billData);
-                    if (empty($res['id'])) {
-                        self::setError('记录流水失败');
-                        Db::rollback();
-                        return false;
-                    }
+                $res = self::backMoney($info['sn'], $info['pay_price'], $info['user_id'], $desc, $info['second_user_id'], $ratioData['second_ratio']);
+                if ($res === false) {
+                    self::setError('更新成功失败，返佣第二人失败：' . self::getError());
+                    return false;
                 }
             }
 
             // 返佣第三人
             if (!empty($info['three_user_id']) && !empty($ratioData['three_ratio'])) {
-
-                $tmpUserId = $info['three_user_id'];
-
-                // 查看是否已返佣过
-                $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
-                if (empty($res['id'])) {
-
-                    if ($ratioData['three_ratio'] > 100 || $ratioData['three_ratio'] < 0) {
-                        self::setError('更新失败，第三返佣比例有误');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $ratio = bcdiv($ratioData['three_ratio'], 100, 4);
-                    $givePrice = bcmul($info['pay_price'], $ratio, 4);
-                    $givePrice = number_format($givePrice, 2);
-
-                    // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)
-                        ->inc('user_money', $givePrice)
-                        ->inc('total_award_price', $givePrice)
-                        ->update([
-                            'update_time' => time()
-                        ]);
-
-                    if (!$res) {
-                        self::setError('增加返佣第三人账户余额失败，ID：' . $tmpUserId);
-                        Db::rollback();
-                        return false;
-                    }
-
-                    // 获取用户余额
-                    $userInfo = User::where('id', $tmpUserId)->find();
-                    if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
-                        self::setError('返佣第三人账户异常');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $billData = [
-                        'user_id' => $tmpUserId,
-                        'n_user_id' => $info['user_id'],
-                        'type' => 3,
-                        'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['three_ratio'] . '%',
-                        'change_type' => 1,
-                        'change_money' => $givePrice,
-                        'changed_money' => $userInfo['user_money'] ?? 0,
-                        'source_sn' => $info['sn']
-                    ];
-
-                    $res = UserMoneyLog::create($billData);
-                    if (empty($res['id'])) {
-                        self::setError('记录流水失败');
-                        Db::rollback();
-                        return false;
-                    }
+                $res = self::backMoney($info['sn'], $info['pay_price'], $info['user_id'], $desc, $info['three_user_id'], $ratioData['three_ratio']);
+                if ($res === false) {
+                    self::setError('更新成功失败，返佣第三人失败：' . self::getError());
+                    return false;
                 }
             }
 
@@ -538,184 +383,28 @@ class ConsumeRechargeLogic extends BaseLogic
 
             // 返佣第一人
             if (!empty($info['first_user_id']) && !empty($ratioData['first_ratio'])) {
-
-                $tmpUserId = $info['first_user_id'];
-
-                // 查看是否已返佣过
-                $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
-                if (empty($res['id'])) {
-
-                    if ($ratioData['first_ratio'] > 100 || $ratioData['first_ratio'] < 0) {
-                        self::setError('更新失败，第一返佣比例有误');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $ratio = bcdiv($ratioData['first_ratio'], 100, 4);
-                    $givePrice = bcmul($realPayPrice, $ratio, 4);
-                    $givePrice = number_format($givePrice, 2);
-
-                    // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)
-                        ->inc('user_money', $givePrice)
-                        ->inc('total_award_price', $givePrice)
-                        ->update([
-                            'update_time' => time()
-                        ]);
-
-                    if (!$res) {
-                        self::setError('增加返佣第一人账户余额失败，ID：' . $tmpUserId);
-                        Db::rollback();
-                        return false;
-                    }
-
-                    // 获取用户余额
-                    $userInfo = User::where('id', $tmpUserId)->find();
-                    if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
-                        self::setError('返佣第一人账户异常');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $billData = [
-                        'user_id' => $tmpUserId,
-                        'n_user_id' => $info['user_id'],
-                        'type' => 3,
-                        'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['first_ratio'] . '%',
-                        'change_type' => 1,
-                        'change_money' => $givePrice,
-                        'changed_money' => $userInfo['user_money'] ?? 0,
-                        'source_sn' => $info['sn']
-                    ];
-
-                    $res = UserMoneyLog::create($billData);
-                    if (empty($res['id'])) {
-                        self::setError('记录流水失败');
-                        Db::rollback();
-                        return false;
-                    }
+                $res = self::backMoney($info['sn'], $realPayPrice, $info['user_id'], $desc, $info['first_user_id'], $ratioData['first_ratio']);
+                if ($res === false) {
+                    self::setError('更新部分成功失败，返佣第一人失败：' . self::getError());
+                    return false;
                 }
             }
 
             // 返佣第二人
             if (!empty($info['second_user_id']) && !empty($ratioData['second_ratio'])) {
-
-                $tmpUserId = $info['second_user_id'];
-
-                // 查看是否已返佣过
-                $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
-                if (empty($res['id'])) {
-
-                    if ($ratioData['second_ratio'] > 100 || $ratioData['second_ratio'] < 0) {
-                        self::setError('更新失败，第二返佣比例有误');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $ratio = bcdiv($ratioData['second_ratio'], 100, 4);
-                    $givePrice = bcmul($realPayPrice, $ratio, 4);
-                    $givePrice = number_format($givePrice, 2);
-
-                    // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)
-                        ->inc('user_money', $givePrice)
-                        ->inc('total_award_price', $givePrice)
-                        ->update([
-                            'update_time' => time()
-                        ]);
-
-                    if (!$res) {
-                        self::setError('增加返佣第二人账户余额失败，ID：' . $tmpUserId);
-                        Db::rollback();
-                        return false;
-                    }
-
-                    // 获取用户余额
-                    $userInfo = User::where('id', $tmpUserId)->find();
-                    if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
-                        self::setError('返佣第二人账户异常');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $billData = [
-                        'user_id' => $tmpUserId,
-                        'n_user_id' => $info['user_id'],
-                        'type' => 3,
-                        'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['second_ratio'] . '%',
-                        'change_type' => 1,
-                        'change_money' => $givePrice,
-                        'changed_money' => $userInfo['user_money'] ?? 0,
-                        'source_sn' => $info['sn']
-                    ];
-
-                    $res = UserMoneyLog::create($billData);
-                    if (empty($res['id'])) {
-                        self::setError('记录流水失败');
-                        Db::rollback();
-                        return false;
-                    }
+                $res = self::backMoney($info['sn'], $realPayPrice, $info['user_id'], $desc, $info['second_user_id'], $ratioData['second_ratio']);
+                if ($res === false) {
+                    self::setError('更新部分成功失败，返佣第二人失败：' . self::getError());
+                    return false;
                 }
             }
 
             // 返佣第三人
             if (!empty($info['three_user_id']) && !empty($ratioData['three_ratio'])) {
-
-                $tmpUserId = $info['three_user_id'];
-
-                // 查看是否已返佣过
-                $res = UserMoneyLog::where('user_id', $tmpUserId)->where('source_sn', $info['sn'])->find();
-                if (empty($res['id'])) {
-
-                    if ($ratioData['three_ratio'] > 100 || $ratioData['three_ratio'] < 0) {
-                        self::setError('更新失败，第三返佣比例有误');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $ratio = bcdiv($ratioData['three_ratio'], 100, 4);
-                    $givePrice = bcmul($realPayPrice, $ratio, 4);
-                    $givePrice = number_format($givePrice, 2);
-
-                    // 更改返还用户余额
-                    $res = User::where('id', $tmpUserId)
-                        ->inc('user_money', $givePrice)
-                        ->inc('total_award_price', $givePrice)
-                        ->update([
-                            'update_time' => time()
-                        ]);
-
-                    if (!$res) {
-                        self::setError('增加返佣第三人账户余额失败，ID：' . $tmpUserId);
-                        Db::rollback();
-                        return false;
-                    }
-
-                    // 获取用户余额
-                    $userInfo = User::where('id', $tmpUserId)->find();
-                    if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
-                        self::setError('返佣第三人账户异常');
-                        Db::rollback();
-                        return false;
-                    }
-
-                    $billData = [
-                        'user_id' => $tmpUserId,
-                        'n_user_id' => $info['user_id'],
-                        'type' => 3,
-                        'desc' => $billDesc . '返佣，返佣比例：' . $ratioData['three_ratio'] . '%',
-                        'change_type' => 1,
-                        'change_money' => $givePrice,
-                        'changed_money' => $userInfo['user_money'] ?? 0,
-                        'source_sn' => $info['sn']
-                    ];
-
-                    $res = UserMoneyLog::create($billData);
-                    if (empty($res['id'])) {
-                        self::setError('记录流水失败');
-                        Db::rollback();
-                        return false;
-                    }
+                $res = self::backMoney($info['sn'], $realPayPrice, $info['user_id'], $desc, $info['three_user_id'], $ratioData['three_ratio']);
+                if ($res === false) {
+                    self::setError('更新部分成功失败，返佣第三人失败：' . self::getError());
+                    return false;
                 }
             }
 
@@ -832,9 +521,93 @@ class ConsumeRechargeLogic extends BaseLogic
     }
 
     /**
+     * @param $sourceSn
+     * @param $realPayPrice
+     * @param $userId
+     * @param $billDesc
+     * @param $backUserId
+     * @param $ratio
+     * @return bool|null
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
+     */
+    private static function backMoney($sourceSn, $realPayPrice, $userId, $billDesc, $backUserId, $ratio): ?bool
+    {
+        if (empty($backUserId) || empty($ratio)) {
+            return null;
+        }
+
+        // 获取用户信息
+        $userInfo = User::where('id', $backUserId)->find();
+        if (empty($userInfo['id'])) {
+            return null;
+        }
+
+        // 查看是否已返佣过
+        $userMoneyLog = UserMoneyLog::where('user_id', $backUserId)->where('source_sn', $sourceSn)->find();
+        if (!empty($userMoneyLog['id'])) {
+            return null;
+        }
+
+        if ($ratio > 100 || $ratio < 0) {
+            self::setError('返佣比例有误');
+            Db::rollback();
+            return false;
+        }
+
+        $realRatio = bcdiv($ratio, 100, 4);
+        $givePrice = bcmul($realPayPrice, $realRatio, 4);
+        $givePrice = number_format($givePrice, 2);
+
+        // 更改返还用户金额
+        $res = User::where('id', $backUserId)
+            ->inc('user_money', $givePrice)
+            ->inc('total_award_price', $givePrice)
+            ->update([
+                'update_time' => time()
+            ]);
+
+        if (!$res) {
+            self::setError('增加账户余额失败，ID：' . $backUserId);
+            Db::rollback();
+            return false;
+        }
+
+        // 获取用户余额
+        $userInfo = User::where('id', $backUserId)->find();
+        if (empty($userInfo['id']) || $userInfo['user_money'] < 0) {
+            self::setError('返佣账户异常');
+            Db::rollback();
+            return false;
+        }
+
+        $billData = [
+            'user_id' => $backUserId,
+            'n_user_id' => $userId,
+            'type' => 3,
+            'desc' => $billDesc . '充值返佣，返佣比例：' . $ratio . '%',
+            'change_type' => 1,
+            'change_money' => $givePrice,
+            'changed_money' => $userInfo['user_money'] ?? 0,
+            'source_sn' => $sourceSn
+        ];
+
+        $res = UserMoneyLog::create($billData);
+        if (empty($res['id'])) {
+            self::setError('记录流水失败');
+            Db::rollback();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * 设置为失败
      *
      * @param $id
+     * @param $adminId
      * @return bool
      */
     public static function setFail($id, $adminId): bool
@@ -985,8 +758,7 @@ class ConsumeRechargeLogic extends BaseLogic
      * @param $price
      * @return bool
      */
-    public
-    static function setBalance($id, $price): bool
+    public static function setBalance($id, $price): bool
     {
         try {
             Db::startTrans();

@@ -275,20 +275,50 @@ class IndexController extends BaseApiController
         }
         try {
             $price = ConfigService::get('website', 'substation_price', '');
-            $user->user_money -= (float)$price;
-            $user->save();
-            $user = User::find($this->userId);
+
+            // 获取用户余额
+            $userInfo = User::where('id', $this->userId)->find();
+            if ($userInfo['user_money'] < 0) {
+                Db::rollback();
+                return $this->fail('余额不足');
+            }
+
+            if (bccomp($userInfo['user_money'], $price, 3) < 0) {
+                Db::rollback();
+                return $this->fail('余额不足');
+            }
+
+            // 扣除用户余额
+            $res = User::where('id', $this->userId)
+                ->dec('user_money', $price)
+                ->update([
+                    'update_time' => time()
+                ]);
+
+            if (!$res) {
+                Db::rollback();
+                return $this->fail('余额不足');
+            }
+
+            // 获取用户余额
+            $userInfo = User::where('id', $this->userId)->find();
+            if ($userInfo['user_money'] < 0) {
+                Db::rollback();
+                return $this->fail('余额不足');
+            }
+
             UserMoneyLog::create([
                 'user_id' => $this->userId,
                 'type' => 7,
                 'desc' => '开通分站扣除',
                 'change_type' => 2,
                 'change_money' => (float)$price,
-                'changed_money' => $user['user_money']
+                'changed_money' => $userInfo['user_money']
             ]);
+
             Substation::create([
                 'user_id' => $this->userId,
-                'parent_user_id' => $user->p_first_user_id,
+                'parent_user_id' => $userInfo['p_first_user_id'],
                 'status' => 1
             ]);
             return $this->success();
