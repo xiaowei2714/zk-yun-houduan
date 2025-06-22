@@ -1024,41 +1024,43 @@ class IndexController extends BaseApiController
     public function register()
     {
         $postData = $this->request->post();
-        Db::startTrans();
+
         try {
             if (!self::verifyCode($postData['email'], $postData['code'])) {
-                throw new \Exception('验证码错误或已过期');
+                return $this->fail('验证码错误或已过期');
             }
+            if (empty($postData['invite_code']) || $postData['invite_code'] == 'undefined') {
+                return $this->fail('请正确输入邀请码');
+            }
+
+            Db::startTrans();
 
             $writeOffUser = WriteOffUser::where('email', $postData['email'])->find();
             if ($writeOffUser) {
+                Db::rollback();
                 return $this->fail('用户已注销');
             }
 
             $user = User::where(['account' => $postData['email']])->find();
             if ($user) {
+                Db::rollback();
                 return $this->fail('用户已存在');
             }
 
-            $p_first_user_id = 0;
-            $p_second_user_id = 0;
-            $p_three_user_id = 0;
-            $invite_code = User::generateInviteCode();
-
-            if (!empty($postData['invite_code']) && $postData['invite_code'] != 'undefined') {
-                $inviter = (new \app\common\model\user\User)->where('invite_code', $postData['invite_code'])->find();
-                if (!$inviter) {
-                    throw new \Exception('邀请码无效');
-                }
-                $p_first_user_id = $inviter->id;
-                $p_second_user_id = $inviter->p_first_user_id;
-                $p_three_user_id = $inviter->p_second_user_id;
+            $inviter = (new \app\common\model\user\User)->where('invite_code', $postData['invite_code'])->find();
+            if (!$inviter) {
+                Db::rollback();
+                return $this->fail('邀请码无效');
             }
+            $p_first_user_id = $inviter->id;
+            $p_second_user_id = $inviter->p_first_user_id;
+            $p_three_user_id = $inviter->p_second_user_id;
 
             $userSn = User::createUserSn();
             $passwordSalt = Config::get('project.unique_identification');
             $password = create_password($postData['password'], $passwordSalt);
             $avatar = ConfigService::get('default_image', 'user_avatar');
+            $invite_code = User::generateInviteCode();
 
             $res = User::create([
                 'sn' => $userSn,

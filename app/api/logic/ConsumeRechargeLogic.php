@@ -115,7 +115,7 @@ class ConsumeRechargeLogic extends BaseLogic
     public static function getCountByType($account, $type, $statusArr = [], $startTime = null)
     {
         try {
-            $obj = ConsumeRecharge::where('account ', '=', $account)
+            $obj = ConsumeRecharge::where('account', '=', $account)
                 ->where('type', '=', $type);
 
             if (!empty($statusArr)) {

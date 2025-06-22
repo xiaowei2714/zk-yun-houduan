@@ -80,7 +80,7 @@ class ConsumeRechargeService
         $configKey = Config::get('project.recharge_key');
         $operatorConf = array_flip(Config::get('project.operator'));
 
-        $url = 'https://ap.xiaoyun.top/api/xy/cx';
+        $url = Config::get('project.phone_url');
 
         $params = [
             'phone' => $phone,
@@ -134,7 +134,7 @@ class ConsumeRechargeService
         }
 
         $configKey = Config::get('project.recharge_key');
-        $url = 'https://ap.xiaoyun.top/api/xy/dfcx';
+        $url = Config::get('project.electricity_url');
 
         $params = [
             'account' => $account,

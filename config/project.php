@@ -113,6 +113,10 @@ return [
         4 => '虚拟',
     ],
 
+    // 话费查询url
+    'phone_url' => 'https://ap.xiaoyun.top/api/xy/cx',
+    'electricity_url' => 'https://ap.xiaoyun.top/api/xy/dfcx',
+
     // 话费查询key
     'recharge_key' => 'T7wxGRMUgYGySPIViThXoVwLSV',
 
